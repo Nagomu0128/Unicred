@@ -42,3 +42,5 @@ next-env.d.ts
 
 # VS Codeの関連ファイルを無視する
 
+src/lib/universityInfo.ts
+src/lib/utils.ts
