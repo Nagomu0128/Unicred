@@ -1,3 +1,9 @@
+
+//全ページを通してgoogle未認証のユーザーはloginページにリダイレクト
+//ログイン毎に必要？firebaseのアクセストークンどうなってる？たしか１時間限定やった気がする。
+//ユーザー登録のリダイレクトは簡単そう
+//アクセストークン関連はかなり苦労しそう。
+
 "use client";
 
 import { useState } from 'react';
@@ -28,7 +34,7 @@ export default function LoginPage() {
       if (typeof redirectTo === 'string') {
         router.push(redirectTo);
       } else {
-        router.push('/registration');
+        router.push('/dashboard'); //dashboardにpushして、ユーザー情報のstate持ってなかったらregistrationにリダイレクトするようにしたい
       }
 
     } catch (error: any) {
