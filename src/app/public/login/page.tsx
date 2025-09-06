@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Head from 'next/head';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { auth } from '@/lib/firebase/firebase.config';
+import { auth } from '@/lib/firebase/client';
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -28,7 +28,7 @@ export default function LoginPage() {
       if (typeof redirectTo === 'string') {
         router.push(redirectTo);
       } else {
-        router.push('/registration');
+        router.push('/dashboard');
       }
 
     } catch (error: any) {
