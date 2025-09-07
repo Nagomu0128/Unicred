@@ -138,7 +138,7 @@ export default function UserRegistrationPage() {
             <Label htmlFor="name" className="block text-sm font-medium text-gray-800 mb-2">氏名</Label>
             <Input 
               id="name" 
-              placeholder="山田 太郎" 
+              placeholder="山田太郎" 
               value={name} 
               onChange={(e) => setName(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-gray-50"

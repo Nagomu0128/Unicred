@@ -36,7 +36,8 @@ export async function POST(request: NextRequest) {
         createdAt: now,
         updatedAt: now
       };
-      const docRef = dbAdmin.collection('courses').doc();
+      //下記のコレクションパスをいじって保存先を変更する
+      const docRef = dbAdmin.collection('departments').doc('faculty-of-engineering').collection('engineering').doc('electronic-information').collection('courses').doc();
       batch.set(docRef, courseWithTimestamp);
     });
 
