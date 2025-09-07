@@ -90,22 +90,44 @@ function parseCSV(csvText: string): Course[] {
     if (values.length < headers.length) continue;
 
     try {
+      // 複数の区分が選択されている場合は最初の一つだけを有効にする
+      const classificationFlags = [
+        { key: 'specializedBasic', value: values[4] === 'true' || values[4] === '1' },
+        { key: 'specialized', value: values[5] === 'true' || values[5] === '1' },
+        { key: 'international', value: values[6] === 'true' || values[6] === '1' },
+        { key: 'general', value: values[7] === 'true' || values[7] === '1' }
+      ];
+
+      // 最初に選択されている区分を特定
+      const selectedClassification = classificationFlags.find(flag => flag.value);
+      const selectedKey = selectedClassification ? selectedClassification.key : null;
+
+      const courseClassification = {
+        specializedBasic: selectedKey === 'specializedBasic',
+        specialized: selectedKey === 'specialized',
+        international: selectedKey === 'international',
+        general: selectedKey === 'general'
+      };
+
+      // 専門科目の分類が有効かどうかを判定
+      const isSpecializationEnabled = courseClassification.specializedBasic || courseClassification.specialized;
+
       const course: Course = {
         academicYear: values[0] || '',
         lectureFormat: values[1] || '',
         courseName: values[2] || '',
         credits: parseInt(values[3]) || 0,
-        courseClassification: {
-          specializedBasic: values[4] === 'true' || values[4] === '1',
-          specialized: values[5] === 'true' || values[5] === '1',
-          international: values[6] === 'true' || values[6] === '1',
-          general: values[7] === 'true' || values[7] === '1'
-        },
-        specializationRelevance: {
+        courseClassification,
+        specializationRelevance: isSpecializationEnabled ? {
           electrical: values[8] || '-',
           quantum: values[9] || '-',
           communication: values[10] || '-',
           information: values[11] || '-'
+        } : {
+          electrical: '-',
+          quantum: '-',
+          communication: '-',
+          information: '-'
         },
         offeringPeriod: {
           spring: values[12] === 'true' || values[12] === '1',

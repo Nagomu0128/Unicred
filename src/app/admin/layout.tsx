@@ -14,6 +14,7 @@ export default function AdminLayout({
   const getCurrentPage = () => {
     if (pathname === '/admin') return 'dashboard';
     if (pathname === '/admin/add-course') return 'add-course';
+    if (pathname === '/admin/contacts') return 'contacts';
     return 'dashboard';
   };
 

@@ -5,6 +5,7 @@ import React from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useAdmin } from '@/context/AdminContext';
 import { usePresence } from '@/context/PresenceContext';
+import { ContactForm } from '@/components/ContactForm';
 
 export default function DashboardPage() {
   const { user, userProfile, loading } = useAuth();
@@ -64,19 +65,9 @@ export default function DashboardPage() {
       )
     },
     { 
-      title: '講義追加申請', 
-      description: '新しい講義を追加', 
-      href: '/protected/profile', 
-      icon: (
-        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-        </svg>
-      )
-    },
-    { 
       title: 'お問い合わせ', 
       description: '管理者に不具合を報告', 
-      href: '/protected/profile', 
+      isContactForm: true,
       icon: (
         <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -174,23 +165,44 @@ export default function DashboardPage() {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {quickActions.map((action, index) => (
-              <a
-                key={index}
-                href={action.href}
-                className="p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 group"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-gray-200 transition-colors">
-                    {action.icon}
+              action.isContactForm ? (
+                <ContactForm
+                  key={index}
+                  triggerText={
+                    <div className="p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 group flex items-center space-x-3 w-full">
+                      <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-gray-200 transition-colors">
+                        {action.icon}
+                      </div>
+                      <div className="text-left">
+                        <h3 className="text-sm font-medium text-gray-900 group-hover:text-blue-700">
+                          {action.title}
+                        </h3>
+                        <p className="text-xs text-gray-500">{action.description}</p>
+                      </div>
+                    </div>
+                  }
+                  triggerVariant="ghost"
+                  triggerSize="default"
+                />
+              ) : (
+                <a
+                  key={index}
+                  href={action.href}
+                  className="p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 group"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-gray-200 transition-colors">
+                      {action.icon}
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-900 group-hover:text-blue-700">
+                        {action.title}
+                      </h3>
+                      <p className="text-xs text-gray-500">{action.description}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-900 group-hover:text-blue-700">
-                      {action.title}
-                    </h3>
-                    <p className="text-xs text-gray-500">{action.description}</p>
-                  </div>
-                </div>
-              </a>
+                </a>
+              )
             ))}
           </div>
         </div>

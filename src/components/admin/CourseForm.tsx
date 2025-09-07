@@ -41,16 +41,72 @@ export const CourseForm: React.FC<CourseFormProps> = ({ onSubmit, loading = fals
     }
   });
 
+  // 選択された授業科目の区分を管理
+  const [selectedClassification, setSelectedClassification] = useState<string>('');
+
+  // 授業科目の区分の選択を処理
+  const handleClassificationChange = (classification: string) => {
+    setSelectedClassification(classification);
+    
+    // すべての区分をfalseにリセット
+    const newClassification = {
+      specializedBasic: false,
+      specialized: false,
+      international: false,
+      general: false
+    };
+
+    // 選択された区分のみtrueに設定
+    if (classification) {
+      newClassification[classification as keyof typeof newClassification] = true;
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      courseClassification: newClassification,
+      // 専門科目の分類が無効になった場合、専門科目の分類をリセット
+      specializationRelevance: (classification === 'specializedBasic' || classification === 'specialized') 
+        ? prev.specializationRelevance 
+        : {
+            electrical: '-',
+            quantum: '-',
+            communication: '-',
+            information: '-'
+          }
+    }));
+  };
+
   const handleInputChange = (field: string, value: any) => {
     if (field.includes('.')) {
       const [parent, child] = field.split('.');
-      setFormData(prev => ({
-        ...prev,
-        [parent]: {
-          ...prev[parent as 'courseClassification' | 'specializationRelevance' | 'offeringPeriod'],
-          [child]: value
+      setFormData(prev => {
+        const newData = {
+          ...prev,
+          [parent]: {
+            ...prev[parent as 'courseClassification' | 'specializationRelevance' | 'offeringPeriod'],
+            [child]: value
+          }
+        };
+
+        // 専門科目の分類が無効になった場合、専門科目の分類をリセット
+        if (parent === 'courseClassification' && (child === 'specializedBasic' || child === 'specialized')) {
+          const isSpecializationEnabled = (child === 'specializedBasic' && value) || 
+                                        (child === 'specialized' && value) ||
+                                        (child === 'specializedBasic' && prev.courseClassification.specialized) ||
+                                        (child === 'specialized' && prev.courseClassification.specializedBasic);
+          
+          if (!isSpecializationEnabled) {
+            newData.specializationRelevance = {
+              electrical: '-',
+              quantum: '-',
+              communication: '-',
+              information: '-'
+            };
+          }
         }
-      }));
+
+        return newData;
+      });
     } else {
       setFormData(prev => ({
         ...prev,
@@ -58,6 +114,9 @@ export const CourseForm: React.FC<CourseFormProps> = ({ onSubmit, loading = fals
       }));
     }
   };
+
+  // 専門科目の分類が有効かどうかを判定
+  const isSpecializationEnabled = formData.courseClassification.specializedBasic || formData.courseClassification.specialized;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,25 +211,31 @@ export const CourseForm: React.FC<CourseFormProps> = ({ onSubmit, loading = fals
       <Card>
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-gray-800">授業科目の区分</CardTitle>
-          <CardDescription>該当する教育区分を選択してください</CardDescription>
+          <CardDescription>該当する教育区分を一つ選択してください</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {Object.entries(formData.courseClassification).map(([key, value]) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[
+              { key: 'specializedBasic', label: '専門基礎教育科目' },
+              { key: 'specialized', label: '専門教育科目' },
+              { key: 'international', label: '高度国際性涵養教育科目' },
+              { key: 'general', label: '高度教養教育科目' }
+            ].map(({ key, label }) => (
               <div key={key} className="flex items-center space-x-2">
-                <Checkbox
+                <input
+                  type="radio"
                   id={`courseClassification.${key}`}
-                  checked={value}
-                  onCheckedChange={(checked) => handleInputChange(`courseClassification.${key}`, checked)}
+                  name="courseClassification"
+                  value={key}
+                  checked={selectedClassification === key}
+                  onChange={(e) => handleClassificationChange(e.target.value)}
+                  className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 focus:ring-green-500 focus:ring-2"
                 />
                 <Label
                   htmlFor={`courseClassification.${key}`}
                   className="text-sm text-gray-700 cursor-pointer"
                 >
-                  {key === 'specializedBasic' && '専門基礎教育科目'}
-                  {key === 'specialized' && '専門教育科目'}
-                  {key === 'international' && '高度国際性涵養教育科目'}
-                  {key === 'general' && '高度教養教育科目'}
+                  {label}
                 </Label>
               </div>
             ))}
@@ -181,8 +246,13 @@ export const CourseForm: React.FC<CourseFormProps> = ({ onSubmit, loading = fals
       {/* 専門分野の関連性 */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg font-semibold text-gray-800">専門分野の関連性</CardTitle>
-          <CardDescription>各専門分野との関連性レベルを選択してください</CardDescription>
+          <CardTitle className="text-lg font-semibold text-gray-800">専門科目の分類</CardTitle>
+          <CardDescription>
+            {isSpecializationEnabled 
+              ? '専門科目の場合、その分類を選択してください' 
+              : '専門基礎教育科目または専門教育科目を選択すると、専門科目の分類が有効になります'
+            }
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -194,9 +264,12 @@ export const CourseForm: React.FC<CourseFormProps> = ({ onSubmit, loading = fals
                 <Select
                   value={formData.specializationRelevance[field.key as keyof typeof formData.specializationRelevance]}
                   onValueChange={(value) => handleInputChange(`specializationRelevance.${field.key}`, value)}
+                  disabled={!isSpecializationEnabled}
                 >
-                  <SelectTrigger className="w-48 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-gray-50">
-                    <SelectValue placeholder="関連性を選択" />
+                  <SelectTrigger className={`w-48 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-gray-50 ${
+                    !isSpecializationEnabled ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}>
+                    <SelectValue placeholder="分類を選択" />
                   </SelectTrigger>
                   <SelectContent>
                     {SPECIALIZATION_LEVELS.map(level => (

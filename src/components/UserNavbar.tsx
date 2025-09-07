@@ -13,7 +13,7 @@ interface UserNavbarProps {
 }
 
 export const UserNavbar: React.FC<UserNavbarProps> = ({ currentPage = 'dashboard' }) => {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const { isAdmin } = useAdmin();
 
   const menuItems = [
@@ -120,7 +120,7 @@ export const UserNavbar: React.FC<UserNavbarProps> = ({ currentPage = 'dashboard
           <div className="flex items-center space-x-4">
             <div className="hidden sm:block text-right">
               <p className="text-sm font-medium text-gray-900">
-                {user?.displayName || user?.email}
+                {userProfile?.displayName || user?.displayName || user?.email}
               </p>
               <p className="text-xs text-gray-500">
                 {isAdmin ? '管理者' : '学生'}

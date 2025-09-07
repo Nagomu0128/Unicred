@@ -6,6 +6,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { AdminProvider } from "@/context/AdminContext";
 import { PresenceProvider } from "@/context/PresenceContext";
 import { AuthGuard } from "@/components/AuthGuard";
+import { Toaster } from "@/components/ui/sonner";
 
 
 const inter = Inter({ subsets: ["latin"] });
@@ -27,6 +28,7 @@ export default function RootLayout({
           <PresenceProvider>
             <AdminProvider>
               {children}
+              <Toaster />
             </AdminProvider>
           </PresenceProvider>
         </AuthProvider>

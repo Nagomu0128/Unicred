@@ -13,7 +13,7 @@ interface AdminNavbarProps {
 }
 
 export const AdminNavbar: React.FC<AdminNavbarProps> = ({ currentPage = 'dashboard' }) => {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const { isAdmin } = useAdmin();
 
   const menuItems = [
@@ -35,6 +35,16 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ currentPage = 'dashboa
       icon: (
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        </svg>
+      )
+    },
+    { 
+      id: 'contacts', 
+      label: 'お問い合わせ', 
+      href: '/admin/contacts',
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
         </svg>
       )
     },
@@ -104,7 +114,7 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ currentPage = 'dashboa
           <div className="flex items-center space-x-4">
             <div className="hidden sm:block text-right">
               <p className="text-sm font-medium text-gray-900">
-                {user?.displayName || user?.email}
+                {userProfile?.displayName || user?.displayName || user?.email}
               </p>
               <p className="text-xs text-gray-500">
                 {isAdmin ? '管理者' : '一般ユーザー'}

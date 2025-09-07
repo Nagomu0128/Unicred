@@ -23,6 +23,35 @@ export default function AddCoursePage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [csvFile, setCsvFile] = useState<File | null>(null);
 
+  // プロフィールの完全性をチェック
+  useEffect(() => {
+    const checkProfileCompleteness = async () => {
+      if (!user || !isAdmin) return;
+
+      try {
+        const userProfileDoc = await getDoc(doc(db, 'users', user.uid));
+        const userProfile = userProfileDoc.data();
+
+        const isProfileComplete = userProfile && 
+          userProfile.displayName && 
+          userProfile.university && 
+          userProfile.faculty && 
+          userProfile.department && 
+          userProfile.grade;
+
+        if (!isProfileComplete) {
+          console.log('Profile incomplete, redirecting to registration');
+          router.push('/public/registration');
+        }
+      } catch (error) {
+        console.error('Error checking profile completeness:', error);
+        router.push('/protected/registration');
+      }
+    };
+
+    checkProfileCompleteness();
+  }, [user, isAdmin, router]);
+
   // 管理者権限チェック
   if (adminLoading) {
     return (
@@ -56,35 +85,6 @@ export default function AddCoursePage() {
       </div>
     );
   }
-
-  // プロフィールの完全性をチェック
-  useEffect(() => {
-    const checkProfileCompleteness = async () => {
-      if (!user) return;
-
-      try {
-        const userProfileDoc = await getDoc(doc(db, 'users', user.uid));
-        const userProfile = userProfileDoc.data();
-
-        const isProfileComplete = userProfile && 
-          userProfile.displayName && 
-          userProfile.university && 
-          userProfile.faculty && 
-          userProfile.department && 
-          userProfile.grade;
-
-        if (!isProfileComplete) {
-          console.log('Profile incomplete, redirecting to registration');
-          router.push('/public/registration');
-        }
-      } catch (error) {
-        console.error('Error checking profile completeness:', error);
-        router.push('/protected/registration');
-      }
-    };
-
-    checkProfileCompleteness();
-  }, [user, router]);
 
   const handleFormSubmit = async (data: CourseFormData) => {
     setLoading(true);
