@@ -47,7 +47,7 @@ export const CourseForm: React.FC<CourseFormProps> = ({ onSubmit, loading = fals
       setFormData(prev => ({
         ...prev,
         [parent]: {
-          ...prev[parent as keyof typeof prev],
+          ...prev[parent as 'courseClassification' | 'specializationRelevance' | 'offeringPeriod'],
           [child]: value
         }
       }));

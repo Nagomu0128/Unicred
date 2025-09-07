@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CourseForm } from '@/components/admin/CourseForm';
 import { CourseFormData } from '@/lib/types/course';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,11 +9,46 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
+import { db } from '@/lib/firebase/client';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function AddCoursePage() {
+  const { user } = useAuth();
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [csvFile, setCsvFile] = useState<File | null>(null);
+
+  // プロフィールの完全性をチェック
+  useEffect(() => {
+    const checkProfileCompleteness = async () => {
+      if (!user) return;
+
+      try {
+        const userProfileDoc = await getDoc(doc(db, 'users', user.uid));
+        const userProfile = userProfileDoc.data();
+
+        const isProfileComplete = userProfile && 
+          userProfile.displayName && 
+          userProfile.university && 
+          userProfile.faculty && 
+          userProfile.department && 
+          userProfile.grade;
+
+        if (!isProfileComplete) {
+          console.log('Profile incomplete, redirecting to registration');
+          router.push('/public/registration');
+        }
+      } catch (error) {
+        console.error('Error checking profile completeness:', error);
+        router.push('/protected/registration');
+      }
+    };
+
+    checkProfileCompleteness();
+  }, [user, router]);
 
   const handleFormSubmit = async (data: CourseFormData) => {
     setLoading(true);

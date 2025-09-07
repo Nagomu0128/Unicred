@@ -1,0 +1,38 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ユーザーコレクションのルール
+    match /users/{userId} {
+      // 認証されたユーザーは自分のドキュメントを読み書きできる
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // lecturesコレクションに対するルール
+    match /lectures/{lectureId} {
+      // 読み取り: 認証済みの全てのユーザーに許可
+      allow read: if request.auth != null;
+
+      // 作成 (create): 認証済みかつ、IDトークンにadmin:trueのカスタムクレームを持つユーザーのみに許可
+      allow create: if request.auth != null && request.auth.token.admin == true;
+
+      // 更新・削除: 今回の要件では定義しない（例：誰にも許可しない）
+      allow update, delete: if false;
+    }
+    
+    // 管理者コレクションのルール（管理者のみアクセス可能）
+    match /admin/{document=**} {
+      allow read, write: if request.auth != null && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+    
+    // コースコレクションのルール（認証されたユーザーは読み取り可能、管理者は書き込み可能）
+    match /courses/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+  }
+}

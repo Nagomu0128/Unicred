@@ -1,16 +1,61 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Head from 'next/head';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '@/lib/firebase/client';
+import { db } from '@/lib/firebase/client';
+import { doc, getDoc } from 'firebase/firestore';
+import { useAuth } from '@/context/AuthContext';
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user, loading } = useAuth();
+
+  // 認証状態が確定した後のリダイレクト処理
+  useEffect(() => {
+    if (!loading && user) {
+      handlePostLoginRedirect();
+    }
+  }, [user, loading]);
+
+  const handlePostLoginRedirect = async () => {
+    if (!user) return;
+
+    try {
+      // ユーザープロファイルの存在をチェック
+      const userProfileDoc = await getDoc(doc(db, 'users', user.uid));
+      const userProfile = userProfileDoc.data();
+
+      const isProfileExists = userProfileDoc.exists;
+      const isProfileComplete = userProfile && 
+        userProfile.displayName && 
+        userProfile.university && 
+        userProfile.faculty && 
+        userProfile.department && 
+        userProfile.grade;
+
+      // redirectToパラメータを確認
+      const redirectTo = searchParams.get('redirectTo');
+      if (typeof redirectTo === 'string') {
+        router.push(redirectTo);
+      } else if (!isProfileExists || !isProfileComplete) {
+        // 初回ログインまたはプロフィール未完了の場合、登録ページへ
+        router.push('/protected/registration');
+      } else {
+        // プロフィール完了済みの場合、ダッシュボードへ
+        router.push('/protected/dashboard');
+      }
+    } catch (error) {
+      console.error('Error checking user profile:', error);
+      // エラーの場合は登録ページへ
+      router.push('/protected/registration');
+    }
+  };
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
@@ -22,14 +67,9 @@ export default function LoginPage() {
 
       // ログイン成功時の処理
       console.log('Google認証成功！ユーザー:', result.user);
-
-      // redirectToパラメータを確認
-      const redirectTo = searchParams.get('redirectTo');
-      if (typeof redirectTo === 'string') {
-        router.push(redirectTo);
-      } else {
-        router.push('/protected/dashboard');
-      }
+      
+      // AuthContextの認証状態更新を待つため、ここではリダイレクトしない
+      // useEffectで認証状態が確定した後にリダイレクト処理が実行される
 
     } catch (error: any) {
       console.error("認証エラー:", error);
@@ -40,6 +80,30 @@ export default function LoginPage() {
   };
 
 
+
+  // 認証済みユーザーがログインページにアクセスした場合の処理
+  if (!loading && user) {
+    return (
+      <div className="font-sans flex justify-center items-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-800">
+        <div className="bg-white p-12 rounded-2xl shadow-xl text-center max-w-md w-11/12 border border-gray-100">
+          <div className="mb-8">
+            <div className="w-[73.6px] h-[73.6px] bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <img 
+                src="/unicred-icon.svg" 
+                alt="Unicred Logo" 
+                className="w-16 h-16 filter brightness-0 invert"
+              />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">ログイン中...</h1>
+            <p className="text-gray-600 text-sm">プロフィールを確認しています</p>
+          </div>
+          <div className="flex justify-center">
+            <div className="border-2 border-green-400 border-t-transparent rounded-full w-8 h-8 animate-spin"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

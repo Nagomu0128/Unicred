@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
+import { dbAdmin } from '@/lib/firebase/admin';
 import { Course } from '@/lib/types/course';
 
 // 講義データを取得
 export async function GET() {
   try {
-    const coursesSnapshot = await adminDb.collection('courses').orderBy('createdAt', 'desc').get();
+    const coursesSnapshot = await dbAdmin.collection('courses').orderBy('createdAt', 'desc').get();
     const courses = coursesSnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Firestoreに保存
-    const docRef = await adminDb.collection('courses').add(courseWithTimestamp);
+    const docRef = await dbAdmin.collection('courses').add(courseWithTimestamp);
 
     return NextResponse.json({ 
       success: true, 
@@ -71,7 +71,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const batch = adminDb.batch();
+    const batch = dbAdmin.batch();
     const now = new Date();
 
     courses.forEach(course => {
@@ -80,7 +80,7 @@ export async function PUT(request: NextRequest) {
         createdAt: now,
         updatedAt: now
       };
-      const docRef = adminDb.collection('courses').doc();
+      const docRef = dbAdmin.collection('courses').doc();
       batch.set(docRef, courseWithTimestamp);
     });
 

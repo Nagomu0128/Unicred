@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
+import { dbAdmin } from '@/lib/firebase/admin';
 import { Course } from '@/lib/types/course';
 
 // CSVファイルをアップロードして講義データを一括登録
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Firestoreに一括保存
-    const batch = adminDb.batch();
+    const batch = dbAdmin.batch();
     const now = new Date();
 
     courses.forEach(course => {
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
         createdAt: now,
         updatedAt: now
       };
-      const docRef = adminDb.collection('courses').doc();
+      const docRef = dbAdmin.collection('courses').doc();
       batch.set(docRef, courseWithTimestamp);
     });
 

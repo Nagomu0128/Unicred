@@ -11,7 +11,6 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   
-  // パスに基づいてcurrentPageを決定
   const getCurrentPage = () => {
     if (pathname === '/admin') return 'dashboard';
     if (pathname === '/admin/add-course') return 'add-course';
