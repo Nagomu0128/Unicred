@@ -6,8 +6,9 @@ import Head from 'next/head';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '@/lib/firebase/client';
 import { db } from '@/lib/firebase/client';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
+import { useAdmin } from '@/context/AdminContext';
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -15,6 +16,7 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading } = useAuth();
+  const { checkAdminStatus } = useAdmin();
 
   // 認証状態が確定した後のリダイレクト処理
   useEffect(() => {
@@ -38,6 +40,17 @@ export default function LoginPage() {
         userProfile.faculty && 
         userProfile.department && 
         userProfile.grade;
+
+      // ログイン時にisActiveをtrueに設定
+      if (userProfileDoc.exists() && userProfile) {
+        await updateDoc(doc(db, 'users', user.uid), {
+          isActive: true,
+          updatedAt: new Date()
+        });
+        
+        // 管理者状態を再チェック
+        checkAdminStatus();
+      }
 
       // redirectToパラメータを確認
       const redirectTo = searchParams.get('redirectTo');

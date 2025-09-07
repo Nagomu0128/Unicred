@@ -41,7 +41,18 @@ export const AdminProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    checkAdminStatus();
+    if (user) {
+      // ユーザーがログインした場合、少し遅延してから管理者状態をチェック
+      // これにより、ログイン時のisActive更新が完了してからチェックされる
+      const timer = setTimeout(() => {
+        checkAdminStatus();
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    } else {
+      setIsAdmin(false);
+      setLoading(false);
+    }
   }, [user]);
 
   return (
