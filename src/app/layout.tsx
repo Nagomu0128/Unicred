@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { AdminProvider } from "@/context/AdminContext";
+import { PresenceProvider } from "@/context/PresenceContext";
 import { AuthGuard } from "@/components/AuthGuard";
 
 
@@ -23,9 +24,11 @@ export default function RootLayout({
     <html lang="ja">
       <body className={inter.className}>
         <AuthProvider>
-          <AdminProvider>
-            {children}
-          </AdminProvider>
+          <PresenceProvider>
+            <AdminProvider>
+              {children}
+            </AdminProvider>
+          </PresenceProvider>
         </AuthProvider>
       </body>
     </html>

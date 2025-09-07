@@ -22,7 +22,7 @@ type UniversityData = typeof universityData;
 type UniversityName = keyof UniversityData;
 
 export default function UserRegistrationPage() {
-  const { user } = useAuth();
+  const { user, refreshUserProfile } = useAuth();
   const router = useRouter();
   const [name, setName] = useState('');
   const [university, setUniversity] = useState<UniversityName | ''>('');
@@ -104,6 +104,9 @@ export default function UserRegistrationPage() {
 
       // Firestoreにユーザープロファイルを保存
       await setDoc(doc(db, 'users', user.uid), userProfile);
+      
+      // AuthContextのユーザープロファイルを更新
+      await refreshUserProfile();
       
       alert('登録が完了しました！');
       router.push('/protected/dashboard');

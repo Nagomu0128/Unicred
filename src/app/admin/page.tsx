@@ -3,12 +3,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAdmin } from '@/context/AdminContext';
+import { usePresence } from '@/context/PresenceContext';
 import { UserManagement } from '@/components/admin/UserManagement';
 import { AdminUser } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 
 export default function AdminPage() {
   const { isAdmin, loading: adminLoading } = useAdmin();
+  const { isOnline, onlineUsers } = usePresence();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -120,7 +122,15 @@ export default function AdminPage() {
           />
         </div>
         <h1 className="text-3xl font-bold text-gray-800 mb-2">管理者ダッシュボード</h1>
-        <p className="text-gray-600 text-sm">ユーザー管理とシステム設定を行えます</p>
+        <div className="flex items-center justify-center space-x-4">
+          <p className="text-gray-600 text-sm">ユーザー管理とシステム設定を行えます</p>
+          <div className="flex items-center space-x-2">
+            <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span className="text-xs text-gray-500">
+              {isOnline ? 'オンライン' : 'オフライン'} ({onlineUsers.length}人がオンライン)
+            </span>
+          </div>
+        </div>
       </div>
 
       {error && (

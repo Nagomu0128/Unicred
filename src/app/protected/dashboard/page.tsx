@@ -4,10 +4,12 @@
 import React from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useAdmin } from '@/context/AdminContext';
+import { usePresence } from '@/context/PresenceContext';
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, userProfile, loading } = useAuth();
   const { isAdmin } = useAdmin();
+  const { isOnline, onlineUsers } = usePresence();
 
   const stats = [
     { label: '登録済み科目', value: '12', icon: '📚', color: 'blue' },
@@ -30,6 +32,17 @@ export default function DashboardPage() {
     { title: 'プロフィール編集', description: '個人情報を更新', href: '/protected/profile', icon: '👤' },
   ];
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">読み込み中...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       {/* ウェルカムセクション */}
@@ -42,11 +55,19 @@ export default function DashboardPage() {
           />
         </div>
         <h1 className="text-3xl font-bold text-gray-800 mb-2">
-          ようこそ、{user?.displayName || user?.email}さん
+          ようこそ、{userProfile?.displayName || user?.displayName || user?.email}さん
         </h1>
-        <p className="text-gray-600 text-sm">
-          {isAdmin ? '管理者ダッシュボード' : '履修管理ダッシュボード'}
-        </p>
+        <div className="flex items-center justify-center space-x-4">
+          <p className="text-gray-600 text-sm">
+            {isAdmin ? '管理者ダッシュボード' : '履修管理ダッシュボード'}
+          </p>
+          <div className="flex items-center space-x-2">
+            <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span className="text-xs text-gray-500">
+              {isOnline ? 'オンライン' : 'オフライン'}
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* 統計カード */}
