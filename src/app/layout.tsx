@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import { AdminProvider } from "@/context/AdminContext";
 import { AuthGuard } from "@/components/AuthGuard";
 
 
@@ -22,7 +23,9 @@ export default function RootLayout({
     <html lang="ja">
       <body className={inter.className}>
         <AuthProvider>
-          {children}
+          <AdminProvider>
+            {children}
+          </AdminProvider>
         </AuthProvider>
       </body>
     </html>

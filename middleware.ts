@@ -20,18 +20,19 @@ export async function middleware(request: NextRequest) {
     const userProfileDoc = await dbAdmin.collection('users').doc(uid).get();
 
     const isProfileExists = userProfileDoc.exists;
-    const isAccessingRegisterPage = request.nextUrl.pathname.startsWith('/profile/register');
+    const isAccessingRegisterPage = request.nextUrl.pathname.startsWith('/protected/registration');
+    const isAccessingDashboard = request.nextUrl.pathname.startsWith('/protected/dashboard');
 
-    if (!isProfileExists &&!isAccessingRegisterPage) {
+    if (!isProfileExists && !isAccessingRegisterPage) {
       // プロフィールがなく、登録ページ以外にアクセスしようとした場合
       // -> 登録ページへ強制リダイレクト
-      return NextResponse.redirect(new URL('/profile/register', request.url));
+      return NextResponse.redirect(new URL('/protected/registration', request.url));
     }
 
     if (isProfileExists && isAccessingRegisterPage) {
       // プロフィールがあり、登録ページにアクセスしようとした場合
-      // -> ホームページへリダイレクト
-      return NextResponse.redirect(new URL('/', request.url));
+      // -> ダッシュボードへリダイレクト
+      return NextResponse.redirect(new URL('/protected/dashboard', request.url));
     }
 
   } catch (error) {

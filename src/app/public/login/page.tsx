@@ -28,7 +28,7 @@ export default function LoginPage() {
       if (typeof redirectTo === 'string') {
         router.push(redirectTo);
       } else {
-        router.push('/dashboard');
+        router.push('/protected/dashboard');
       }
 
     } catch (error: any) {
@@ -50,10 +50,12 @@ export default function LoginPage() {
         <div className="bg-white p-12 rounded-2xl shadow-xl text-center max-w-md w-11/12 border border-gray-100">
           {/* アイコンとタイトル */}
           <div className="mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-              </svg>
+            <div className="w-[73.6px] h-[73.6px] bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <img 
+                src="/unicred-icon.svg" 
+                alt="Unicred Logo" 
+                className="w-16 h-16 filter brightness-0 invert"
+              />
             </div>
             <h1 className="text-3xl font-bold text-gray-800 mb-2">Unicred</h1>
             <p className="text-gray-600 text-sm">大阪大学履修支援システム</p>

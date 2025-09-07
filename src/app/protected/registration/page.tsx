@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 import {
   Select,
   SelectContent,
@@ -13,17 +15,22 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { universityData } from "@/lib/universityInfo";
 import { grades } from "@/lib/universityInfo";
+import { db } from "@/lib/firebase/client";
+import { doc, setDoc } from "firebase/firestore";
 
 type UniversityData = typeof universityData;
 type UniversityName = keyof UniversityData;
 
 export default function UserRegistrationPage() {
+  const { user } = useAuth();
+  const router = useRouter();
   const [name, setName] = useState('');
   const [university, setUniversity] = useState<UniversityName | ''>('');
   const [faculty, setFaculty] = useState('');
   const [department, setDepartment] = useState('');
   const [course, setCourse] = useState('');
   const [grade, setGrade] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const faculties = useMemo(() => {
     return university ? Object.keys(universityData[university]) : [];
@@ -70,33 +77,54 @@ export default function UserRegistrationPage() {
     setCourse('');
   };
 
-  const isSubmittable = name && university && faculty && department && grade;
+  const isSubmittable = name && university && faculty && department && grade && !isSubmitting;
 
-  const handleSubmit = () => {
-    if (!isSubmittable) {
+  const handleSubmit = async () => {
+    if (!isSubmittable || !user) {
       alert('すべての必須項目を入力してください。');
       return;
     }
-    const formData = {
-      name,
-      university,
-      faculty,
-      department,
-      course: course || 'N/A',
-      grade,
-    };
-    console.log("登録データ:", formData);
-    alert('登録が完了しました！');
+
+    setIsSubmitting(true);
+
+    try {
+      const userProfile = {
+        email: user.email || '',
+        displayName: name,
+        university,
+        faculty,
+        department,
+        course: course || 'N/A',
+        grade,
+        isAdmin: false, // 新規ユーザーは管理者権限なしで開始
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isActive: true
+      };
+
+      // Firestoreにユーザープロファイルを保存
+      await setDoc(doc(db, 'users', user.uid), userProfile);
+      
+      alert('登録が完了しました！');
+      router.push('/protected/dashboard');
+    } catch (error) {
+      console.error('Error saving user profile:', error);
+      alert('登録中にエラーが発生しました。もう一度お試しください。');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="font-sans flex justify-center items-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-800">
       <div className="bg-white p-12 rounded-2xl shadow-xl text-center max-w-lg w-11/12 border border-gray-100">
         <div className="mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-            </svg>
+          <div className="w-[73.6px] h-[73.6px] bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <img 
+              src="/unicred-icon.svg" 
+              alt="Unicred Logo" 
+              className="w-16 h-16 filter brightness-0 invert"
+            />
           </div>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">ユーザー情報登録</h1>
           <p className="text-gray-600 text-sm">基本情報を入力してください</p>
@@ -190,7 +218,7 @@ export default function UserRegistrationPage() {
           onClick={handleSubmit} 
           disabled={!isSubmittable}
         >
-          登録する
+          {isSubmitting ? '登録中...' : '登録する'}
         </Button>
 
         <div className="mt-8 p-4 bg-green-50 rounded-lg border border-green-100">
