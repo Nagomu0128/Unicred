@@ -12,7 +12,7 @@ interface AdminNavbarProps {
 
 export const AdminNavbar: React.FC<AdminNavbarProps> = ({ currentPage = 'dashboard' }) => {
   const { user } = useAuth();
-  const { isAdmin } = useAdmin();
+  const { isAdmin, loading: adminLoading } = useAdmin();
 
   const menuItems = [
     { id: 'dashboard', label: 'ダッシュボード', href: '/admin' },
@@ -22,6 +22,56 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ currentPage = 'dashboa
   // すべてのページで緑色のテーマを使用
   const isAddCoursePage = currentPage === 'add-course';
   const themeColor = 'green';
+
+  // 管理者権限がない場合はメニューバーを無効化
+  if (adminLoading) {
+    return (
+      <nav className="bg-white shadow-lg border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <div className="w-[36.8px] h-[36.8px] bg-gray-300 rounded-lg animate-pulse"></div>
+              <div className="ml-3">
+                <div className="h-5 w-32 bg-gray-300 rounded animate-pulse"></div>
+                <div className="h-3 w-20 bg-gray-200 rounded animate-pulse mt-1"></div>
+              </div>
+            </div>
+            <div className="h-8 w-24 bg-gray-300 rounded animate-pulse"></div>
+          </div>
+        </div>
+      </nav>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <nav className="bg-red-50 shadow-lg border-b border-red-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <div className="w-[36.8px] h-[36.8px] bg-red-500 rounded-lg flex items-center justify-center">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h1 className="text-xl font-bold text-red-900">アクセス拒否</h1>
+                <p className="text-xs text-red-600">管理者権限が必要です</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Link
+                href="/protected/dashboard"
+                className="px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-100 rounded-lg transition-colors"
+              >
+                ダッシュボードに戻る
+              </Link>
+            </div>
+          </div>
+        </div>
+      </nav>
+    );
+  }
 
   const handleLogout = () => {
     // ログアウト処理
