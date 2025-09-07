@@ -13,6 +13,7 @@ type UserProfile = {
   university?: string;
   faculty?: string;
   department?: string;
+  course?: string;
   grade?: string;
   isAdmin?: boolean;
   isActive?: boolean;
