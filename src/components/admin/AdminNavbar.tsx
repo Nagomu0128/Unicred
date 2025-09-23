@@ -1,20 +1,20 @@
 // /components/admin/AdminNavbar.tsx
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useAdmin } from '@/context/AdminContext';
 import { db } from '@/lib/firebase/client';
 import { doc, updateDoc } from 'firebase/firestore';
 
-interface AdminNavbarProps {
-  currentPage?: string;
-}
+interface AdminNavbarProps {}
 
-export const AdminNavbar: React.FC<AdminNavbarProps> = ({ currentPage = 'dashboard' }) => {
+export const AdminNavbar: React.FC<AdminNavbarProps> = () => {
   const { user, userProfile } = useAuth();
   const { isAdmin } = useAdmin();
+  const pathname = usePathname();
 
   const menuItems = [
     { 
@@ -49,6 +49,13 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ currentPage = 'dashboa
       )
     },
   ];
+
+  const currentPage = useMemo(() => {
+    if (pathname.startsWith('/admin/add-course')) return 'add-course';
+    if (pathname.startsWith('/admin/contacts')) return 'contacts';
+    if (pathname.startsWith('/admin')) return 'dashboard';
+    return 'dashboard';
+  }, [pathname]);
 
   // すべてのページで緑色のテーマを使用
   const isAddCoursePage = currentPage === 'add-course';
@@ -91,7 +98,6 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ currentPage = 'dashboa
             </div>
           </div>
 
-          {/* メニューアイテム */}
           <div className="hidden md:flex items-center space-x-1">
             {menuItems.map((item) => (
               <Link
@@ -101,8 +107,7 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ currentPage = 'dashboa
                   currentPage === item.id
                     ? 'bg-green-100 text-green-700 border border-green-200'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-              >
+                }`}>
                 <span className="mr-2 flex items-center">{item.icon}</span>
                 {item.label}
               </Link>
@@ -142,8 +147,7 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ currentPage = 'dashboa
                   currentPage === item.id
                     ? 'bg-green-100 text-green-700 border border-green-200'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-              >
+                }`}>
                 <span className="mb-1 flex items-center justify-center">{item.icon}</span>
                 <span className="text-xs">{item.label}</span>
               </Link>

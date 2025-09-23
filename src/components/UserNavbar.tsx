@@ -1,19 +1,17 @@
-// /components/UserNavbar.tsx
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useAdmin } from '@/context/AdminContext';
 import { db } from '@/lib/firebase/client';
 import { doc, updateDoc } from 'firebase/firestore';
 import { 
   NavigationMenu,
-  NavigationMenuContent,
   NavigationMenuItem,
   NavigationMenuLink,
   NavigationMenuList,
-  NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu';
 import {
@@ -38,13 +36,12 @@ import {
   Plus
 } from 'lucide-react';
 
-interface UserNavbarProps {
-  currentPage?: string;
-}
+interface UserNavbarProps {}
 
-export const UserNavbar: React.FC<UserNavbarProps> = ({ currentPage = 'dashboard' }) => {
+export const UserNavbar: React.FC<UserNavbarProps> = () => {
   const { user, userProfile } = useAuth();
   const { isAdmin } = useAdmin();
+  const pathname = usePathname();
 
   const menuItems = [
     { 
@@ -79,9 +76,15 @@ export const UserNavbar: React.FC<UserNavbarProps> = ({ currentPage = 'dashboard
     },
   ];
 
+  const currentPageId = useMemo(() => {
+    const currentPath = pathname.split('/')[1] || 'dashboard';
+    const foundItem = menuItems.find(item => item.href.includes(currentPath));
+    if (pathname === '/') return 'dashboard';
+    return foundItem ? foundItem.id : 'dashboard';
+  }, [pathname, menuItems]);
+
   const handleLogout = async () => {
     try {
-      // ユーザーのisActiveをfalseに設定
       if (user) {
         await updateDoc(doc(db, 'users', user.uid), {
           isActive: false,
@@ -91,7 +94,6 @@ export const UserNavbar: React.FC<UserNavbarProps> = ({ currentPage = 'dashboard
     } catch (error) {
       console.error('Error updating user status:', error);
     } finally {
-      // ログアウト処理
       window.location.href = '/';
     }
   };
@@ -100,7 +102,6 @@ export const UserNavbar: React.FC<UserNavbarProps> = ({ currentPage = 'dashboard
     <nav className="bg-white shadow-lg border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* ロゴ・タイトル */}
           <div className="flex items-center space-x-3">
             <div className="w-[36.8px] h-[36.8px] bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
               <img 
@@ -116,34 +117,26 @@ export const UserNavbar: React.FC<UserNavbarProps> = ({ currentPage = 'dashboard
             </div>
           </div>
 
-          {/* ナビゲーションメニュー */}
-          <div className="hidden md:flex items-center">
-            <NavigationMenu>
-              <NavigationMenuList>
-                {menuItems.map((item) => {
-                  const IconComponent = item.icon;
-                  return (
-                    <NavigationMenuItem key={item.id}>
-                      <Link href={item.href} legacyBehavior passHref>
-                        <NavigationMenuLink
-                          className={cn(
-                            navigationMenuTriggerStyle(),
-                            currentPage === item.id && "bg-blue-100 text-blue-700 border border-blue-200",
-                            "flex items-center gap-2"
-                          )}
-                        >
-                          <IconComponent className="h-4 w-4" />
-                          {item.label}
-                        </NavigationMenuLink>
-                      </Link>
-                    </NavigationMenuItem>
-                  );
-                })}
-              </NavigationMenuList>
-            </NavigationMenu>
+          <div className="hidden md:flex items-center space-x-2">
+            {menuItems.map((item) => {
+              const IconComponent = item.icon;
+              const isActive = currentPageId === item.id;
+              return (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  className={cn(
+                    "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 flex items-center gap-2",
+                    isActive ? "bg-blue-100 text-blue-700 border border-blue-200" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                  )}
+                >
+                  <IconComponent className="h-4 w-4" />
+                  {item.label}
+                </Link>
+              );
+            })}
           </div>
 
-          {/* ユーザーメニュー */}
           <div className="flex items-center space-x-4">
             <div className="hidden sm:block text-right">
               <p className="text-sm font-medium text-gray-900">
@@ -174,7 +167,10 @@ export const UserNavbar: React.FC<UserNavbarProps> = ({ currentPage = 'dashboard
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <Link href="/admin" className="flex items-center gap-2 text-red-600">
+                      <Link
+                        href="/admin"
+                        className="flex items-center gap-2 text-red-600"
+                        >
                         <Settings className="h-4 w-4" />
                         管理者パネル
                       </Link>
@@ -191,22 +187,21 @@ export const UserNavbar: React.FC<UserNavbarProps> = ({ currentPage = 'dashboard
           </div>
         </div>
 
-        {/* モバイルメニュー */}
         <div className="md:hidden border-t border-gray-200 py-2">
           <div className="flex space-x-1">
             {menuItems.map((item) => {
               const IconComponent = item.icon;
+              const isActive = currentPageId === item.id;
               return (
                 <Link
                   key={item.id}
                   href={item.href}
                   prefetch={true}
-                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium text-center transition-all duration-200 flex flex-col items-center justify-center ${
-                    currentPage === item.id
+                  className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium text-center transition-all duration-150 flex flex-col items-center justify-center ${
+                    isActive
                       ? 'bg-blue-100 text-blue-700 border border-blue-200'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-                >
+                  }`}>
                   <IconComponent className="h-4 w-4 mb-1" />
                   <span className="text-xs">{item.label}</span>
                 </Link>

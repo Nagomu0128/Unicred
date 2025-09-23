@@ -518,7 +518,7 @@ export default function GradesPage() {
                             )}
                             className="text-xs text-blue-600 hover:text-blue-800"
                           >
-                            {expandedSpecializedGroup === 'specialized' ? '群分けを閉じる' : '群分けを表示'}
+                            {expandedSpecializedGroup === 'specialized' ? '詳細を閉じる' : '詳細を表示'}
                           </Button>
                         )}
                       </div>

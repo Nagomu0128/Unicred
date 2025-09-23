@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase/client';
 import { collection, query, where, getDocs, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { Search, Filter, X, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface Course {
   id: string;
@@ -37,6 +38,7 @@ export default function CoursesPage() {
   const [selectedCourseType, setSelectedCourseType] = useState<string>('all');
   const [selectedSemesters, setSelectedSemesters] = useState<string[]>([]);
   const [showRegisteredOnly, setShowRegisteredOnly] = useState(false);
+  const [isFilterExpanded, setIsFilterExpanded] = useState(false);
 
 
   useEffect(() => {
@@ -242,116 +244,151 @@ export default function CoursesPage() {
         <p className="text-gray-600">履修可能な講義を確認・登録できます</p>
       </div>
 
-      {/* フィルター */}
+      {/* 検索バー */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">フィルター</CardTitle>
-          <CardDescription>
-            講義を検索・絞り込むことができます
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="search" className="text-sm font-medium">
-                検索
-              </Label>
+        <CardContent className="pt-6">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
-                id="search"
                 placeholder="講義名、講義コード、説明で検索..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="course-type" className="text-sm font-medium">
-                講義種別
-              </Label>
-              <Select value={selectedCourseType} onValueChange={setSelectedCourseType}>
-                <SelectTrigger id="course-type">
-                  <SelectValue placeholder="講義種別を選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  {courseTypes.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">
-                学期
-              </Label>
-              <div className="grid grid-cols-2 gap-2">
-                {['春', '夏', '秋', '冬'].map((semester) => (
-                  <div key={semester} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`semester-${semester}`}
-                      checked={selectedSemesters.includes(semester)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedSemesters(prev => [...prev, semester]);
-                        } else {
-                          setSelectedSemesters(prev => prev.filter(s => s !== semester));
-                        }
-                      }}
-                    />
-                    <Label htmlFor={`semester-${semester}`} className="text-sm">
-                      {semester}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="registered-only" className="text-sm font-medium">
-                表示オプション
-              </Label>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="registered-only"
-                  checked={showRegisteredOnly}
-                  onCheckedChange={(checked) => setShowRegisteredOnly(checked as boolean)}
-                />
-                <Label htmlFor="registered-only" className="text-sm">
-                  登録済みのみ表示
-                </Label>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSearchTerm('');
-                  setSelectedCourseType('all');
-                  setSelectedSemesters([]);
-                  setShowRegisteredOnly(false);
-                }}
-                className="w-full"
-              >
-                リセット
-              </Button>
-            </div>
-          </div>
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-600">
-                表示中: {filteredCourses.length}件の講義
-              </div>
-            </div>
+            <Button
+              variant="outline"
+              onClick={() => setIsFilterExpanded(!isFilterExpanded)}
+              className="flex items-center gap-2"
+            >
+              <Filter className="h-4 w-4" />
+              フィルター
+              {isFilterExpanded ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSearchTerm('');
+                setSelectedCourseType('all');
+                setSelectedSemesters([]);
+                setShowRegisteredOnly(false);
+              }}
+              className="flex items-center gap-2"
+            >
+              <X className="h-4 w-4" />
+              リセット
+            </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* フィルター詳細 */}
+      {isFilterExpanded && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              詳細フィルター
+            </CardTitle>
+            <CardDescription>
+              講義をより詳細に絞り込むことができます
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* 講義種別 */}
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold text-gray-700">
+                  講義種別
+                </Label>
+                <Select value={selectedCourseType} onValueChange={setSelectedCourseType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="講義種別を選択" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {courseTypes.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* 学期 */}
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold text-gray-700">
+                  開講学期
+                </Label>
+                <div className="grid grid-cols-2 gap-3">
+                  {['春', '夏', '秋', '冬'].map((semester) => (
+                    <div key={semester} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`semester-${semester}`}
+                        checked={selectedSemesters.includes(semester)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedSemesters(prev => [...prev, semester]);
+                          } else {
+                            setSelectedSemesters(prev => prev.filter(s => s !== semester));
+                          }
+                        }}
+                      />
+                      <Label htmlFor={`semester-${semester}`} className="text-sm cursor-pointer">
+                        {semester}学期
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 表示オプション */}
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold text-gray-700">
+                  表示オプション
+                </Label>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="registered-only"
+                      checked={showRegisteredOnly}
+                      onCheckedChange={(checked) => setShowRegisteredOnly(checked as boolean)}
+                    />
+                    <Label htmlFor="registered-only" className="text-sm cursor-pointer">
+                      登録済みのみ表示
+                    </Label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 結果サマリー */}
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-gray-600">
+          <span className="font-medium">{filteredCourses.length}</span>件の講義が見つかりました
+        </div>
+        {isFilterExpanded && (
+          <div className="text-xs text-gray-500">
+            {searchTerm && `検索: "${searchTerm}"`}
+            {selectedCourseType !== 'all' && ` | 種別: ${courseTypes.find(t => t.value === selectedCourseType)?.label}`}
+            {selectedSemesters.length > 0 && ` | 学期: ${selectedSemesters.join(', ')}`}
+            {showRegisteredOnly && ' | 登録済みのみ'}
+          </div>
+        )}
+      </div>
 
       {/* 講義一覧 */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">講義一覧</CardTitle>
-          <CardDescription>
-            {filteredCourses.length}件の講義が見つかりました
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
