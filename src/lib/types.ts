@@ -4,11 +4,11 @@ export interface UserProfile {
   email: string;
   displayName?: string;
   isAdmin: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Date | null;
+  updatedAt: Date | null;
 }
 
 export interface AdminUser extends UserProfile {
-  lastLoginAt?: Date;
+  lastLoginAt?: Date | null;
   isActive: boolean;
 }

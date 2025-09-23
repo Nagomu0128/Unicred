@@ -4,22 +4,28 @@
 import React, { useState, useEffect } from 'react';
 import { AdminUser } from '@/lib/types';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 interface UserManagementProps {
   users: AdminUser[];
   onUpdateAdminStatus: (uid: string, isAdmin: boolean) => Promise<void>;
+  onDeleteUser: (uid: string) => Promise<void>;
   loading?: boolean;
 }
 
 export const UserManagement: React.FC<UserManagementProps> = ({
   users,
   onUpdateAdminStatus,
+  onDeleteUser,
   loading = false
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [updatingUsers, setUpdatingUsers] = useState<Set<string>>(new Set());
+  const [deletingUsers, setDeletingUsers] = useState<Set<string>>(new Set());
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
 
   const filteredUsers = users.filter(user =>
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -42,7 +48,37 @@ export const UserManagement: React.FC<UserManagementProps> = ({
     }
   };
 
-  const formatDate = (date: Date | undefined) => {
+  const handleDeleteClick = (user: AdminUser) => {
+    setUserToDelete(user);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!userToDelete) return;
+    
+    setDeletingUsers(prev => new Set(prev).add(userToDelete.uid));
+    
+    try {
+      await onDeleteUser(userToDelete.uid);
+      setDeleteDialogOpen(false);
+      setUserToDelete(null);
+    } catch (error) {
+      console.error('Error deleting user:', error);
+    } finally {
+      setDeletingUsers(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(userToDelete.uid);
+        return newSet;
+      });
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setUserToDelete(null);
+  };
+
+  const formatDate = (date: Date | null | undefined) => {
     if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
       return '-';
     }
@@ -99,6 +135,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-800">登録日</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-800">最終更新</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-800">操作</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-800">削除</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -141,6 +178,15 @@ export const UserManagement: React.FC<UserManagementProps> = ({
                       }
                     </Button>
                   </td>
+                  <td className="px-6 py-4">
+                    <Button
+                      onClick={() => handleDeleteClick(user)}
+                      disabled={deletingUsers.has(user.uid)}
+                      className="px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {deletingUsers.has(user.uid) ? '削除中...' : '削除'}
+                    </Button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -163,6 +209,51 @@ export const UserManagement: React.FC<UserManagementProps> = ({
           </div>
         )}
       </div>
+
+      {/* 削除確認ダイアログ */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-600">ユーザー削除の確認</DialogTitle>
+            <DialogDescription className="text-gray-600">
+              この操作は取り消せません。以下のユーザーを削除しますか？
+            </DialogDescription>
+          </DialogHeader>
+          {userToDelete && (
+            <div className="py-4">
+              <div className="bg-gray-50 p-4 rounded-lg border">
+                <div className="space-y-2">
+                  <div><strong>メールアドレス:</strong> {userToDelete.email}</div>
+                  <div><strong>表示名:</strong> {userToDelete.displayName || '-'}</div>
+                  <div><strong>管理者:</strong> {userToDelete.isAdmin ? 'はい' : 'いいえ'}</div>
+                  <div><strong>登録日:</strong> {formatDate(userToDelete.createdAt)}</div>
+                </div>
+              </div>
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-800 text-sm">
+                  <strong>⚠️ 警告:</strong> このユーザーのアカウントとデータが完全に削除されます。
+                </p>
+              </div>
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button
+              onClick={handleDeleteCancel}
+              variant="outline"
+              className="border-gray-300 text-gray-700 hover:bg-gray-50"
+            >
+              キャンセル
+            </Button>
+            <Button
+              onClick={handleDeleteConfirm}
+              className="bg-red-600 hover:bg-red-700 text-white"
+              disabled={deletingUsers.has(userToDelete?.uid || '')}
+            >
+              {deletingUsers.has(userToDelete?.uid || '') ? '削除中...' : '削除する'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { CourseFormData, ACADEMIC_YEARS, LECTURE_FORMATS, SPECIALIZATION_LEVELS, SPECIALIZATION_FIELDS } from '@/lib/types/course';
+import { universityData } from '@/lib/universityInfo';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -16,13 +17,27 @@ interface CourseFormProps {
 
 export const CourseForm: React.FC<CourseFormProps> = ({ onSubmit, loading = false }) => {
   const [formData, setFormData] = useState<CourseFormData>({
-    academicYear: '',
+    academicYear: [],
     lectureFormat: '',
     courseName: '',
     credits: 0,
+    department: {
+      faculty: '',
+      department: '',
+      course: ''
+    },
     courseClassification: {
+      gatewayToLearning: false,
+      foundationalLiberalArts: false,
+      informationEducation: false,
+      healthSports: false,
+      advancedSeminar: false,
       specializedBasic: false,
       specialized: false,
+      generalEnglish: false,
+      practicalEnglish: false,
+      secondForeignLanguage: false,
+      globalUnderstanding: false,
       international: false,
       general: false
     },
@@ -37,12 +52,55 @@ export const CourseForm: React.FC<CourseFormProps> = ({ onSubmit, loading = fals
       summer: false,
       autumn: false,
       winter: false,
-      intensive: false
+      intensive: false,
+      online: false
     }
   });
 
   // 選択された授業科目の区分を管理
   const [selectedClassification, setSelectedClassification] = useState<string>('');
+  
+  // 学部学科コースの選択状態を管理
+  const [selectedFaculty, setSelectedFaculty] = useState<string>('');
+  const [selectedDepartment, setSelectedDepartment] = useState<string>('');
+
+  // 学部選択の処理
+  const handleFacultyChange = (faculty: string) => {
+    setSelectedFaculty(faculty);
+    setSelectedDepartment('');
+    setFormData(prev => ({
+      ...prev,
+      department: {
+        faculty,
+        department: '',
+        course: ''
+      }
+    }));
+  };
+
+  // 学科選択の処理
+  const handleDepartmentChange = (department: string) => {
+    setSelectedDepartment(department);
+    setFormData(prev => ({
+      ...prev,
+      department: {
+        ...prev.department,
+        department,
+        course: ''
+      }
+    }));
+  };
+
+  // コース選択の処理
+  const handleCourseChange = (course: string) => {
+    setFormData(prev => ({
+      ...prev,
+      department: {
+        ...prev.department,
+        course
+      }
+    }));
+  };
 
   // 授業科目の区分の選択を処理
   const handleClassificationChange = (classification: string) => {
@@ -50,8 +108,17 @@ export const CourseForm: React.FC<CourseFormProps> = ({ onSubmit, loading = fals
     
     // すべての区分をfalseにリセット
     const newClassification = {
+      gatewayToLearning: false,
+      foundationalLiberalArts: false,
+      informationEducation: false,
+      healthSports: false,
+      advancedSeminar: false,
       specializedBasic: false,
       specialized: false,
+      generalEnglish: false,
+      practicalEnglish: false,
+      secondForeignLanguage: false,
+      globalUnderstanding: false,
       international: false,
       general: false
     };
@@ -120,6 +187,19 @@ export const CourseForm: React.FC<CourseFormProps> = ({ onSubmit, loading = fals
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // バリデーション：最低1つの学年が選択されているかチェック
+    if (formData.academicYear.length === 0) {
+      alert('最低1つの学年を選択してください');
+      return;
+    }
+    
+    // バリデーション：学部学科が選択されているかチェック
+    if (!formData.department.faculty || !formData.department.department) {
+      alert('学部と学科を選択してください');
+      return;
+    }
+    
     await onSubmit(formData);
   };
 
@@ -132,25 +212,118 @@ export const CourseForm: React.FC<CourseFormProps> = ({ onSubmit, loading = fals
           <CardDescription>講義の基本情報を入力してください</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* 学部学科コース選択 */}
+          <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+            <h4 className="font-medium text-gray-800">学部学科コース</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="faculty">
+                  学部 <span className="text-green-500">*</span>
+                </Label>
+                <Select
+                  value={selectedFaculty}
+                  onValueChange={handleFacultyChange}
+                  required
+                >
+                  <SelectTrigger className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white">
+                    <SelectValue placeholder="学部を選択してください" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.keys(universityData['大阪大学']).map(faculty => (
+                      <SelectItem key={faculty} value={faculty}>{faculty}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="department">
+                  学科 <span className="text-green-500">*</span>
+                </Label>
+                <Select
+                  value={selectedDepartment}
+                  onValueChange={handleDepartmentChange}
+                  disabled={!selectedFaculty}
+                  required
+                >
+                  <SelectTrigger className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                    !selectedFaculty ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
+                  }`}>
+                    <SelectValue placeholder="学科を選択してください" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {selectedFaculty && Object.keys(universityData['大阪大学'][selectedFaculty as keyof typeof universityData['大阪大学']]).map(department => (
+                      <SelectItem key={department} value={department}>{department}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="course">
+                  コース
+                </Label>
+                <Select
+                  value={formData.department.course || ''}
+                  onValueChange={handleCourseChange}
+                  disabled={!selectedDepartment}
+                >
+                  <SelectTrigger className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                    !selectedDepartment ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
+                  }`}>
+                    <SelectValue placeholder="コースを選択してください（任意）" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {selectedFaculty && selectedDepartment && 
+                      universityData['大阪大学'][selectedFaculty as keyof typeof universityData['大阪大学']][selectedDepartment]?.map(course => (
+                        <SelectItem key={course} value={course}>{course}</SelectItem>
+                      ))
+                    }
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="academicYear">
                 配当学年 <span className="text-green-500">*</span>
               </Label>
-              <Select
-                value={formData.academicYear}
-                onValueChange={(value) => handleInputChange('academicYear', value)}
-                required
-              >
-                <SelectTrigger className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-gray-50">
-                  <SelectValue placeholder="学年を選択してください" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ACADEMIC_YEARS.map(year => (
-                    <SelectItem key={year} value={year}>{year}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {ACADEMIC_YEARS.map(year => (
+                  <div key={year} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`academicYear-${year}`}
+                      checked={formData.academicYear.includes(year)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          // 学年を追加
+                          setFormData(prev => ({
+                            ...prev,
+                            academicYear: [...prev.academicYear, year]
+                          }));
+                        } else {
+                          // 学年を削除
+                          setFormData(prev => ({
+                            ...prev,
+                            academicYear: prev.academicYear.filter(y => y !== year)
+                          }));
+                        }
+                      }}
+                    />
+                    <Label
+                      htmlFor={`academicYear-${year}`}
+                      className="text-sm text-gray-700 cursor-pointer"
+                    >
+                      {year}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+              {formData.academicYear.length === 0 && (
+                <p className="text-sm text-red-500">最低1つの学年を選択してください</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -214,10 +387,19 @@ export const CourseForm: React.FC<CourseFormProps> = ({ onSubmit, loading = fals
           <CardDescription>該当する教育区分を一つ選択してください</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
-              { key: 'specializedBasic', label: '専門基礎教育科目' },
-              { key: 'specialized', label: '専門教育科目' },
+              { key: 'gatewayToLearning', label: '学問の扉' },
+              { key: 'foundationalLiberalArts', label: '基盤教養' },
+              { key: 'informationEducation', label: '情報教育' },
+              { key: 'healthSports', label: '健康スポーツ' },
+              { key: 'advancedSeminar', label: 'アドヴァンスト・セミナー' },
+              { key: 'specializedBasic', label: '専門基礎科目' },
+              { key: 'specialized', label: '専門科目' },
+              { key: 'generalEnglish', label: '総合英語' },
+              { key: 'practicalEnglish', label: '実践英語' },
+              { key: 'secondForeignLanguage', label: '第二外国語' },
+              { key: 'globalUnderstanding', label: 'グローバル理解' },
               { key: 'international', label: '高度国際性涵養教育科目' },
               { key: 'general', label: '高度教養教育科目' }
             ].map(({ key, label }) => (
@@ -292,7 +474,7 @@ export const CourseForm: React.FC<CourseFormProps> = ({ onSubmit, loading = fals
           <CardDescription>開講される学期を選択してください</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
             {Object.entries(formData.offeringPeriod).map(([key, value]) => (
               <div key={key} className="flex items-center space-x-2">
                 <Checkbox
@@ -309,6 +491,7 @@ export const CourseForm: React.FC<CourseFormProps> = ({ onSubmit, loading = fals
                   {key === 'autumn' && '秋学期'}
                   {key === 'winter' && '冬学期'}
                   {key === 'intensive' && '集中'}
+                  {key === 'online' && 'オンライン'}
                 </Label>
               </div>
             ))}

@@ -3,12 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import { CourseForm } from '@/components/admin/CourseForm';
 import { CourseFormData } from '@/lib/types/course';
+import { universityData } from '@/lib/universityInfo';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/context/AuthContext';
 import { useAdmin } from '@/context/AdminContext';
 import { useRouter } from 'next/navigation';
@@ -22,6 +24,29 @@ export default function AddCoursePage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [csvFile, setCsvFile] = useState<File | null>(null);
+  
+  // CSV用の学部学科コース選択状態
+  const [csvFaculty, setCsvFaculty] = useState<string>('');
+  const [csvDepartment, setCsvDepartment] = useState<string>('');
+  const [csvCourse, setCsvCourse] = useState<string>('');
+
+  // CSV用の学部選択の処理
+  const handleCsvFacultyChange = (faculty: string) => {
+    setCsvFaculty(faculty);
+    setCsvDepartment('');
+    setCsvCourse('');
+  };
+
+  // CSV用の学科選択の処理
+  const handleCsvDepartmentChange = (department: string) => {
+    setCsvDepartment(department);
+    setCsvCourse('');
+  };
+
+  // CSV用のコース選択の処理
+  const handleCsvCourseChange = (course: string) => {
+    setCsvCourse(course);
+  };
 
   // プロフィールの完全性をチェック
   useEffect(() => {
@@ -151,12 +176,18 @@ export default function AddCoursePage() {
 
   const handleCsvDownload = async () => {
     try {
-      const response = await fetch('/api/admin/courses/csv');
+      // 学部学科コースの情報をクエリパラメータとして送信
+      const params = new URLSearchParams();
+      if (csvFaculty && csvFaculty !== 'all') params.append('faculty', csvFaculty);
+      if (csvDepartment && csvDepartment !== 'all') params.append('department', csvDepartment);
+      if (csvCourse && csvCourse !== 'all') params.append('course', csvCourse);
+      
+      const response = await fetch(`/api/admin/courses/csv?${params.toString()}`);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'course_template.csv';
+      a.download = `course_template_${csvFaculty || 'all'}_${csvDepartment || 'all'}.csv`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -221,15 +252,87 @@ export default function AddCoursePage() {
                 <CardHeader>
                   <CardTitle className="text-lg font-semibold text-blue-800">テンプレートのダウンロード</CardTitle>
                   <CardDescription className="text-blue-700">
-                    CSVファイルで講義を一括登録する場合は、まずテンプレートをダウンロードしてExcelで編集してください。
+                    CSVファイルで講義を一括登録する場合は、まずテンプレートをダウンロードしてExcelで編集してください。特定の学部学科コースに絞ったテンプレートも生成できます。
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
+                  {/* 学部学科コース選択 */}
+                  <div className="space-y-4 p-4 bg-white rounded-lg border">
+                    <h4 className="font-medium text-gray-800">対象学部学科コース（任意）</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="csv-faculty">学部</Label>
+                        <Select
+                          value={csvFaculty}
+                          onValueChange={handleCsvFacultyChange}
+                        >
+                          <SelectTrigger className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white">
+                            <SelectValue placeholder="学部を選択してください（任意）" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">全学部</SelectItem>
+                            {Object.keys(universityData['大阪大学']).map(faculty => (
+                              <SelectItem key={faculty} value={faculty}>{faculty}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="csv-department">学科</Label>
+                        <Select
+                          value={csvDepartment}
+                          onValueChange={handleCsvDepartmentChange}
+                          disabled={!csvFaculty || csvFaculty === 'all'}
+                        >
+                          <SelectTrigger className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                            !csvFaculty || csvFaculty === 'all' ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
+                          }`}>
+                            <SelectValue placeholder="学科を選択してください（任意）" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">全学科</SelectItem>
+                            {csvFaculty && csvFaculty !== 'all' && Object.keys(universityData['大阪大学'][csvFaculty as keyof typeof universityData['大阪大学']]).map(department => (
+                              <SelectItem key={department} value={department}>{department}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="csv-course">コース</Label>
+                        <Select
+                          value={csvCourse}
+                          onValueChange={handleCsvCourseChange}
+                          disabled={!csvDepartment || csvDepartment === 'all'}
+                        >
+                          <SelectTrigger className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                            !csvDepartment || csvDepartment === 'all' ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
+                          }`}>
+                            <SelectValue placeholder="コースを選択してください（任意）" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">全コース</SelectItem>
+                            {csvFaculty && csvFaculty !== 'all' && csvDepartment && csvDepartment !== 'all' && 
+                              universityData['大阪大学'][csvFaculty as keyof typeof universityData['大阪大学']][csvDepartment]?.map(course => (
+                                <SelectItem key={course} value={course}>{course}</SelectItem>
+                              ))
+                            }
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      選択した学部学科コースに基づいて、学部・学科・コース列にデフォルト値が設定されたテンプレートをダウンロードします。
+                    </p>
+                  </div>
+
                   <Button
                     onClick={handleCsvDownload}
                     className="bg-blue-600 hover:bg-blue-700 text-white"
                   >
                     CSVテンプレートをダウンロード
+                    {csvFaculty && csvFaculty !== 'all' && ` (${csvFaculty}${csvDepartment && csvDepartment !== 'all' ? ` - ${csvDepartment}` : ''}${csvCourse && csvCourse !== 'all' ? ` - ${csvCourse}` : ''})`}
                   </Button>
                 </CardContent>
               </Card>

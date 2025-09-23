@@ -4,8 +4,8 @@
 import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
 import { User, onAuthStateChanged } from 'firebase/auth';
 import { auth, db, rtdb } from "@/lib/firebase/client";
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { ref, set, serverTimestamp, onDisconnect } from 'firebase/database';
+import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { ref, set, serverTimestamp as rtdbServerTimestamp, onDisconnect } from 'firebase/database';
 import nookies from 'nookies';
 
 type UserProfile = {
@@ -116,7 +116,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // ユーザーをアクティブ状態に設定
       await set(userPresenceRef, {
         online: true,
-        lastSeen: serverTimestamp(),
+        lastSeen: rtdbServerTimestamp(),
         displayName: user.displayName || user.email,
         uid: user.uid,
       });
@@ -124,13 +124,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // FirestoreのisActiveも更新
       await updateDoc(doc(db, 'users', user.uid), {
         isActive: true,
-        updatedAt: new Date(),
+        updatedAt: serverTimestamp(),
       });
 
       // 接続が切れた時の自動処理
       onDisconnect(userPresenceRef).set({
         online: false,
-        lastSeen: serverTimestamp(),
+        lastSeen: rtdbServerTimestamp(),
         displayName: user.displayName || user.email,
         uid: user.uid,
       });

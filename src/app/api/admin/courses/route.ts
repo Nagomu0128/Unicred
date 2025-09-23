@@ -27,9 +27,9 @@ export async function POST(request: NextRequest) {
     const courseData: Course = await request.json();
     
     // バリデーション
-    if (!courseData.courseName || !courseData.academicYear || !courseData.lectureFormat) {
+    if (!courseData.courseName || !courseData.academicYear || courseData.academicYear.length === 0 || !courseData.lectureFormat || !courseData.department.faculty || !courseData.department.department) {
       return NextResponse.json(
-        { error: '必須フィールドが不足しています' },
+        { error: '必須フィールドが不足しています（講義名、学年、授業形態、学部、学科は必須です）' },
         { status: 400 }
       );
     }

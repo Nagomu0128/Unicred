@@ -42,6 +42,8 @@ export default function AdminPage() {
 
   const handleUpdateAdminStatus = async (uid: string, isAdmin: boolean) => {
     try {
+      console.log('Starting admin status update:', { uid, isAdmin });
+      
       const response = await fetch('/api/admin/users', {
         method: 'PATCH',
         headers: {
@@ -52,10 +54,57 @@ export default function AdminPage() {
           isAdmin: isAdmin,
         }),
       });
+      
+      console.log('Fetch response received:', {
+        ok: response.ok,
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url
+      });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || '管理者権限の更新に失敗しました');
+        let errorMessage = '管理者権限の更新に失敗しました';
+        let errorData = null;
+        
+        try {
+          errorData = await response.json();
+          errorMessage = errorData?.error || errorMessage;
+        } catch (parseError) {
+          console.error('Error parsing response:', parseError);
+          errorMessage = `HTTP ${response?.status || 'unknown'}: ${response?.statusText || 'unknown error'}`;
+        }
+        
+        // デバッグ情報を詳細にログ出力
+        const debugInfo = {
+          responseOk: response.ok,
+          status: response?.status || 'undefined',
+          statusText: response?.statusText || 'undefined',
+          url: response?.url || '/api/admin/users',
+          uid: uid || 'undefined',
+          isAdmin: isAdmin !== undefined ? isAdmin : 'undefined',
+          errorMessage: errorMessage || 'undefined',
+          errorData: errorData || 'no error data',
+          timestamp: new Date().toISOString()
+        };
+        
+        // シンプルなエラーログ
+        console.error('ADMIN UPDATE FAILED - Status:', response.status, 'UID:', uid, 'IsAdmin:', isAdmin);
+        console.error('Error Message:', errorMessage);
+        console.error('Full Error Data:', errorData);
+        
+        // Status 500エラーの場合、ユーザーが存在しない可能性がある
+        if (response.status === 500 && errorMessage.includes('ユーザーが見つかりません')) {
+          console.log('User not found, removing from local list:', uid);
+          // ローカルのユーザーリストから該当ユーザーを削除
+          setUsers(prevUsers => prevUsers.filter(user => user.uid !== uid));
+          alert(`ユーザーが見つからないため、リストから削除しました: ${uid}`);
+        } else {
+          alert(`管理者権限の更新に失敗しました: ${errorMessage}`);
+        }
+        
+        // ユーザーリストを再取得して最新状態に更新
+        await fetchUsers();
+        return;
       }
 
       // ユーザーリストを更新
@@ -65,8 +114,50 @@ export default function AdminPage() {
         )
       );
     } catch (err) {
-      console.error('Error updating admin status:', err);
-      alert(err instanceof Error ? err.message : 'エラーが発生しました');
+      console.error('=== FETCH ERROR ===');
+      console.error('Error type:', typeof err);
+      console.error('Error message:', err instanceof Error ? err.message : 'Unknown error');
+      console.error('Error stack:', err instanceof Error ? err.stack : 'No stack');
+      console.error('UID:', uid);
+      console.error('IsAdmin:', isAdmin);
+      console.error('Timestamp:', new Date().toISOString());
+      console.error('==================');
+      
+      const errorMessage = err instanceof Error ? err.message : 'エラーが発生しました';
+      alert(`管理者権限の更新に失敗しました: ${errorMessage}`);
+      
+      // ユーザーリストを再取得して最新状態に更新
+      await fetchUsers();
+    }
+  };
+
+  const handleDeleteUser = async (uid: string) => {
+    try {
+      const response = await fetch('/api/admin/users', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          targetUid: uid,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'ユーザーの削除に失敗しました');
+      }
+
+      // ユーザーリストを更新
+      setUsers(prevUsers => prevUsers.filter(user => user.uid !== uid));
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      const errorMessage = err instanceof Error ? err.message : 'エラーが発生しました';
+      alert(`ユーザーの削除に失敗しました: ${errorMessage}`);
+      
+      // ユーザーリストを再取得して最新状態に更新
+      await fetchUsers();
+      throw err; // UserManagementコンポーネントにエラーを伝播
     }
   };
 
@@ -151,6 +242,7 @@ export default function AdminPage() {
       <UserManagement
         users={users}
         onUpdateAdminStatus={handleUpdateAdminStatus}
+        onDeleteUser={handleDeleteUser}
         loading={loading}
       />
     </>

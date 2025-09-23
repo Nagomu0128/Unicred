@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import {
@@ -16,13 +16,13 @@ import { Label } from "@/components/ui/label";
 import { universityData } from "@/lib/universityInfo";
 import { grades } from "@/lib/universityInfo";
 import { db } from "@/lib/firebase/client";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 type UniversityData = typeof universityData;
 type UniversityName = keyof UniversityData;
 
 export default function UserRegistrationPage() {
-  const { user, refreshUserProfile } = useAuth();
+  const { user, userProfile, refreshUserProfile } = useAuth();
   const router = useRouter();
   const [name, setName] = useState('');
   const [university, setUniversity] = useState<UniversityName | ''>('');
@@ -31,6 +31,21 @@ export default function UserRegistrationPage() {
   const [course, setCourse] = useState('');
   const [grade, setGrade] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // プロファイルが既に完成している場合はダッシュボードにリダイレクト
+  useEffect(() => {
+    if (userProfile) {
+      const isProfileComplete = userProfile.displayName && 
+                               userProfile.university && 
+                               userProfile.faculty && 
+                               userProfile.department && 
+                               userProfile.grade;
+
+      if (isProfileComplete) {
+        router.push('/dashboard');
+      }
+    }
+  }, [userProfile, router]);
 
   const faculties = useMemo(() => {
     return university ? Object.keys(universityData[university]) : [];
@@ -97,8 +112,8 @@ export default function UserRegistrationPage() {
         course: course || 'N/A',
         grade,
         isAdmin: false, // 新規ユーザーは管理者権限なしで開始
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
         isActive: true
       };
 
@@ -119,9 +134,9 @@ export default function UserRegistrationPage() {
   };
 
   return (
-    <div className="font-sans flex justify-center items-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-800">
-      <div className="bg-white p-12 rounded-2xl shadow-xl text-center max-w-lg w-11/12 border border-gray-100">
-        <div className="mb-8">
+    <div className="font-sans text-gray-800 w-full">
+      <div className="bg-white p-12 rounded-2xl shadow-xl border border-gray-100 mx-auto" style={{ width: '40%', maxWidth: '40vw' }}>
+        <div className="mb-8 text-center">
           <div className="w-[73.6px] h-[73.6px] bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
             <img 
               src="/unicred-icon.svg" 
@@ -216,22 +231,24 @@ export default function UserRegistrationPage() {
           </div>
         </div>
 
-        <Button 
-          className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-6 rounded-xl shadow-md transition-all duration-300 ease-in-out mt-8" 
-          onClick={handleSubmit} 
-          disabled={!isSubmittable}
-        >
-          {isSubmitting ? '登録中...' : '登録する'}
-        </Button>
+        <div className="text-center">
+          <Button 
+            className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-6 rounded-xl shadow-md transition-all duration-300 ease-in-out mt-8" 
+            onClick={handleSubmit} 
+            disabled={!isSubmittable}
+          >
+            {isSubmitting ? '登録中...' : '登録する'}
+          </Button>
 
-        <div className="mt-8 p-4 bg-green-50 rounded-lg border border-green-100">
-          <div className="flex items-center justify-center mb-2">
-            <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-            </svg>
-            <span className="text-green-800 font-medium text-sm">プロフィール設定完了</span>
+          <div className="mt-8 p-4 bg-green-50 rounded-lg border border-green-100">
+            <div className="flex items-center justify-center mb-2">
+              <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+              </svg>
+              <span className="text-green-800 font-medium text-sm">プロフィール設定完了</span>
+            </div>
+            <p className="text-green-700 text-xs">履修計画に最適化された機能をご利用いただけます</p>
           </div>
-          <p className="text-green-700 text-xs">履修計画に最適化された機能をご利用いただけます</p>
         </div>
       </div>
     </div>

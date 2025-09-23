@@ -84,8 +84,8 @@ async function setAdmin(email: string) {
         email: userRecord.email,
         displayName: userRecord.displayName || '',
         isAdmin: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         isActive: true
       });
       console.log('✅ ユーザープロファイルを作成し、管理者権限を付与しました');
@@ -93,7 +93,7 @@ async function setAdmin(email: string) {
       console.log('📝 管理者権限を付与中...');
       await db.collection('users').doc(uid).update({
         isAdmin: true,
-        updatedAt: new Date()
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
       });
       console.log('✅ 管理者権限を付与しました');
     }
