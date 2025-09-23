@@ -109,7 +109,7 @@ export default function UserRegistrationPage() {
       await refreshUserProfile();
       
       alert('登録が完了しました！');
-      router.push('/protected/dashboard');
+      router.push('/dashboard');
     } catch (error) {
       console.error('Error saving user profile:', error);
       alert('登録中にエラーが発生しました。もう一度お試しください。');

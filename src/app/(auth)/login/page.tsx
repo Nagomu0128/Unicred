@@ -1,35 +1,38 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, memo, lazy, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Head from 'next/head';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { auth } from '@/lib/firebase/client';
-import { db } from '@/lib/firebase/client';
+import { getAuthInstance, getDbInstance } from '@/lib/firebase/client';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
 import { useAdmin } from '@/context/AdminContext';
 
-export default function LoginPage() {
+// 重いコンポーネントを遅延読み込み
+const AdminContextProvider = lazy(() => import('@/context/AdminContext').then(module => ({ default: module.AdminProvider })));
+
+const LoginPage = memo(function LoginPage() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading } = useAuth();
   const { checkAdminStatus } = useAdmin();
 
-  // 認証状態が確定した後のリダイレクト処理
+  // 初期化の最適化（即座に表示）
   useEffect(() => {
-    if (!loading && user) {
-      handlePostLoginRedirect();
-    }
-  }, [user, loading]);
+    setIsInitialized(true);
+  }, []);
 
-  const handlePostLoginRedirect = async () => {
+  // 認証状態が確定した後のリダイレクト処理（メモ化）
+  const handlePostLoginRedirect = useCallback(async () => {
     if (!user) return;
 
     try {
-      // ユーザープロファイルの存在をチェック
+      // ユーザープロファイルの存在をチェック（遅延初期化を使用）
+      const db = getDbInstance();
       const userProfileDoc = await getDoc(doc(db, 'users', user.uid));
       const userProfile = userProfileDoc.data();
 
@@ -41,15 +44,21 @@ export default function LoginPage() {
         userProfile.department && 
         userProfile.grade;
 
-      // ログイン時にisActiveをtrueに設定
+      // ログイン時にisActiveをtrueに設定（非同期で実行）
       if (userProfileDoc.exists() && userProfile) {
-        await updateDoc(doc(db, 'users', user.uid), {
-          isActive: true,
-          updatedAt: new Date()
-        });
-        
-        // 管理者状態を再チェック
-        checkAdminStatus();
+        setTimeout(async () => {
+          try {
+            await updateDoc(doc(db, 'users', user.uid), {
+              isActive: true,
+              updatedAt: new Date()
+            });
+            
+            // 管理者状態を再チェック
+            checkAdminStatus();
+          } catch (error) {
+            console.error('Error updating user status:', error);
+          }
+        }, 0);
       }
 
       // redirectToパラメータを確認
@@ -58,24 +67,37 @@ export default function LoginPage() {
         router.push(redirectTo);
       } else if (!isProfileExists || !isProfileComplete) {
         // 初回ログインまたはプロフィール未完了の場合、登録ページへ
-        router.push('/protected/registration');
+        router.push('/registration');
       } else {
         // プロフィール完了済みの場合、ダッシュボードへ
-        router.push('/protected/dashboard');
+        router.push('/dashboard');
       }
     } catch (error) {
       console.error('Error checking user profile:', error);
       // エラーの場合は登録ページへ
-      router.push('/protected/registration');
+      router.push('/registration');
     }
-  };
+  }, [user, searchParams, router, checkAdminStatus]);
 
-  const handleGoogleLogin = async () => {
+  // 認証状態が確定した後のリダイレクト処理
+  useEffect(() => {
+    if (!loading && user) {
+      handlePostLoginRedirect();
+    }
+  }, [user, loading, handlePostLoginRedirect]);
+
+  const handleGoogleLogin = useCallback(async () => {
     setIsLoading(true);
     setErrorMessage('');
 
     try {
       const provider = new GoogleAuthProvider();
+      // プロバイダーの設定を最適化
+      provider.addScope('email');
+      provider.addScope('profile');
+      
+      // 遅延初期化を使用
+      const auth = getAuthInstance();
       const result = await signInWithPopup(auth, provider);
 
       // ログイン成功時の処理
@@ -90,12 +112,57 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
 
+
+  // 初期化前の表示
+  if (!isInitialized) {
+    return (
+      <div className="font-sans flex justify-center items-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-800">
+        <div className="bg-white p-12 rounded-2xl shadow-xl text-center max-w-md w-11/12 border border-gray-100">
+          <div className="mb-8">
+            <div className="w-[73.6px] h-[73.6px] bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <img 
+                src="/unicred-icon.svg" 
+                alt="Unicred Logo" 
+                className="w-16 h-16 filter brightness-0 invert pointer-events-none select-none"
+                draggable="false"
+              />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Unicred</h1>
+            <p className="text-gray-600 text-sm">大阪大学履修支援システム</p>
+          </div>
+          <div className="flex justify-center">
+            <div className="border-2 border-blue-400 border-t-transparent rounded-full w-8 h-8 animate-spin"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ローディング状態の表示
+  if (loading) {
+    return (
+      <div className="font-sans flex justify-center items-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-800">
+        <div className="bg-white p-12 rounded-2xl shadow-xl text-center max-w-md w-11/12 border border-gray-100">
+          <div className="mb-8">
+            <div className="w-[73.6px] h-[73.6px] bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg animate-pulse">
+              <div className="w-16 h-16 bg-gray-200 rounded-full"></div>
+            </div>
+            <div className="h-8 w-48 bg-gray-200 rounded animate-pulse mx-auto mb-2"></div>
+            <div className="h-4 w-32 bg-gray-200 rounded animate-pulse mx-auto"></div>
+          </div>
+          <div className="flex justify-center">
+            <div className="border-2 border-blue-400 border-t-transparent rounded-full w-8 h-8 animate-spin"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // 認証済みユーザーがログインページにアクセスした場合の処理
-  if (!loading && user) {
+  if (user) {
     return (
       <div className="font-sans flex justify-center items-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-800">
         <div className="bg-white p-12 rounded-2xl shadow-xl text-center max-w-md w-11/12 border border-gray-100">
@@ -104,7 +171,8 @@ export default function LoginPage() {
               <img 
                 src="/unicred-icon.svg" 
                 alt="Unicred Logo" 
-                className="w-16 h-16 filter brightness-0 invert"
+                className="w-16 h-16 filter brightness-0 invert pointer-events-none select-none"
+                draggable="false"
               />
             </div>
             <h1 className="text-3xl font-bold text-gray-800 mb-2">ログイン中...</h1>
@@ -131,7 +199,8 @@ export default function LoginPage() {
               <img 
                 src="/unicred-icon.svg" 
                 alt="Unicred Logo" 
-                className="w-16 h-16 filter brightness-0 invert"
+                className="w-16 h-16 filter brightness-0 invert pointer-events-none select-none"
+                draggable="false"
               />
             </div>
             <h1 className="text-3xl font-bold text-gray-800 mb-2">Unicred</h1>
@@ -183,4 +252,6 @@ export default function LoginPage() {
       </div>
     </>
   );
-}
+});
+
+export default LoginPage;

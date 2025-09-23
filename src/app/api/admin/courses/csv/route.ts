@@ -172,10 +172,5 @@ function generateCSVTemplate(): string {
     '集中'
   ];
 
-  const sampleData = [
-    '1年,講義,コンピュータシステム I,2,true,false,false,false,C,F,F,G,true,false,false,false,false',
-    '2年,講義・演習,電子情報工学序論,3,true,false,false,false,◎,O,O,O,true,false,true,false,false'
-  ];
-
-  return [headers.join(','), ...sampleData].join('\n');
+  return headers.join(',');
 }

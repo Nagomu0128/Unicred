@@ -22,17 +22,59 @@ const firebaseConfig = {
   databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
 };
 
-// Initialize Firebase
-export const app = !getApps().length? initializeApp(firebaseConfig) : getApp();
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const rtdb = getDatabase(app);
+// Initialize Firebase with performance optimizations
+let appInstance: ReturnType<typeof initializeApp> | null = null;
 
-// Initialize Analytics only on the client side
+export const getAppInstance = () => {
+  if (!appInstance) {
+    appInstance = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+  }
+  return appInstance;
+};
+
+// Lazy initialize services to improve initial load time
+let authInstance: ReturnType<typeof getAuth> | null = null;
+let dbInstance: ReturnType<typeof getFirestore> | null = null;
+let rtdbInstance: ReturnType<typeof getDatabase> | null = null;
+
+export const getAuthInstance = () => {
+  if (!authInstance) {
+    authInstance = getAuth(getAppInstance());
+  }
+  return authInstance;
+};
+
+export const getDbInstance = () => {
+  if (!dbInstance) {
+    dbInstance = getFirestore(getAppInstance());
+  }
+  return dbInstance;
+};
+
+export const getRtdbInstance = () => {
+  if (!rtdbInstance) {
+    rtdbInstance = getDatabase(getAppInstance());
+  }
+  return rtdbInstance;
+};
+
+// For backward compatibility - lazy initialization
+export const auth = getAuthInstance();
+export const db = getDbInstance();
+export const rtdb = getRtdbInstance();
+export const app = getAppInstance();
+
+// Initialize Analytics only on the client side with error handling
 if (typeof window !== 'undefined') {
   isSupported().then((supported) => {
     if (supported) {
-      const analytics = getAnalytics(app);
+      try {
+        getAnalytics(app);
+      } catch (error) {
+        console.warn('Analytics initialization failed:', error);
+      }
     }
+  }).catch(() => {
+    // Silently fail if analytics is not supported
   });
 }

@@ -41,11 +41,11 @@ export default function AddCoursePage() {
 
         if (!isProfileComplete) {
           console.log('Profile incomplete, redirecting to registration');
-          router.push('/public/registration');
+          router.push('/registration');
         }
       } catch (error) {
         console.error('Error checking profile completeness:', error);
-        router.push('/protected/registration');
+        router.push('/registration');
       }
     };
 
@@ -76,7 +76,7 @@ export default function AddCoursePage() {
           <h1 className="text-2xl font-bold text-red-900 mb-2">アクセス拒否</h1>
           <p className="text-red-600 mb-6">このページにアクセスするには管理者権限が必要です。</p>
           <a
-            href="/protected/dashboard"
+            href="/dashboard"
             className="inline-block px-6 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
           >
             ダッシュボードに戻る

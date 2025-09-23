@@ -100,7 +100,7 @@ export default function AdminPage() {
           <h1 className="text-2xl font-bold text-red-900 mb-2">アクセス拒否</h1>
           <p className="text-red-600 mb-6">このページにアクセスするには管理者権限が必要です。</p>
           <a
-            href="/protected/dashboard"
+            href="/dashboard"
             className="inline-block px-6 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
           >
             ダッシュボードに戻る

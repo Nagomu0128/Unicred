@@ -11,7 +11,7 @@ export const AuthGuard = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     // 認証状態の確認が完了していて、かつ未ログインの場合はリダイレクト
     if (!loading && !user) {
-      router.push('/public/login');
+      router.push('/login');
     }
   }, [loading, user, router]);
 

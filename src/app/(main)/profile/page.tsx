@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, memo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useAdmin } from '@/context/AdminContext';
 import { usePresence } from '@/context/PresenceContext';
@@ -16,7 +16,7 @@ import { universityData, grades } from '@/lib/universityInfo';
 
 type UniversityName = keyof typeof universityData;
 
-export default function ProfilePage() {
+const ProfilePage = memo(function ProfilePage() {
   const { user, userProfile, loading, refreshUserProfile } = useAuth();
   const { isAdmin } = useAdmin();
   const { isOnline } = usePresence();
@@ -163,10 +163,49 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">読み込み中...</p>
+      <div className="space-y-6">
+        {/* ヘッダースケルトン */}
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="h-8 w-48 bg-gray-200 rounded animate-pulse mb-2"></div>
+            <div className="h-4 w-64 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+          <div className="h-10 w-20 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+
+        {/* カードスケルトン */}
+        <div className="bg-white rounded-lg shadow-lg border-0 overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b">
+            <div className="h-6 w-32 bg-gray-200 rounded animate-pulse mb-1"></div>
+            <div className="h-4 w-48 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+          
+          <div className="p-6 space-y-6">
+            {/* 個人情報スケルトン */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[1, 2].map((i) => (
+                <div key={i} className="space-y-2">
+                  <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-11 w-full bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              ))}
+            </div>
+
+            {/* 学籍情報スケルトン */}
+            <div className="space-y-6">
+              <div className="border-t pt-6">
+                <div className="h-5 w-24 bg-gray-200 rounded animate-pulse mb-4"></div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="space-y-2">
+                      <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
+                      <div className="h-11 w-full bg-gray-200 rounded animate-pulse"></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -177,11 +216,12 @@ export default function ProfilePage() {
       {/* ヘッダーセクション */}
       <div className="mb-8 text-center">
         <div className="w-[73.6px] h-[73.6px] bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-          <img 
-            src="/unicred-icon.svg" 
-            alt="Unicred Logo" 
-            className="w-16 h-16 filter brightness-0 invert"
-          />
+            <img 
+              src="/unicred-icon.svg" 
+              alt="Unicred Logo" 
+              className="w-16 h-16 filter brightness-0 invert pointer-events-none select-none"
+              draggable="false"
+            />
         </div>
         <h1 className="text-3xl font-bold text-gray-800 mb-2">プロフィール</h1>
         <div className="flex items-center justify-center space-x-4">
@@ -257,7 +297,7 @@ export default function ProfilePage() {
             {/* 氏名とメール */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="displayName" className="text-sm font-medium text-gray-700">
+                <Label htmlFor="displayName" className="text-xs font-medium text-gray-700">
                   氏名
                 </Label>
                 {isEditing ? (
@@ -270,7 +310,7 @@ export default function ProfilePage() {
                   />
                 ) : (
                   <div className="h-11 flex items-center px-3 bg-gray-50 rounded-md border">
-                    <span className="text-gray-900 font-medium">
+                    <span className="text-sm text-gray-900 font-medium">
                       {userProfile?.displayName || '未設定'}
                     </span>
                   </div>
@@ -278,11 +318,11 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                <Label htmlFor="email" className="text-xs font-medium text-gray-700">
                   メールアドレス
                 </Label>
                 <div className="h-11 flex items-center px-3 bg-gray-50 rounded-md border">
-                  <span className="text-gray-900 font-medium">{user?.email}</span>
+                  <span className="text-sm text-gray-900 font-medium">{user?.email}</span>
                 </div>
                 <p className="text-xs text-gray-500">メールアドレスは変更できません</p>
               </div>
@@ -291,11 +331,11 @@ export default function ProfilePage() {
             {/* 学籍情報 */}
             <div className="space-y-6">
               <div className="border-t pt-6">
-                <h3 className="text-md font-medium text-gray-800 mb-4">学籍情報</h3>
+                <h3 className="text-sm font-medium text-gray-800 mb-4">学籍情報</h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="university" className="text-sm font-medium text-gray-700">
+                    <Label htmlFor="university" className="text-xs font-medium text-gray-700">
                       大学
                     </Label>
                     {isEditing ? (
@@ -312,7 +352,7 @@ export default function ProfilePage() {
                       </Select>
                     ) : (
                       <div className="h-11 flex items-center px-3 bg-gray-50 rounded-md border">
-                        <span className="text-gray-900 font-medium">
+                        <span className="text-sm text-gray-900 font-medium">
                           {userProfile?.university || '未設定'}
                         </span>
                       </div>
@@ -320,7 +360,7 @@ export default function ProfilePage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="faculty" className="text-sm font-medium text-gray-700">
+                    <Label htmlFor="faculty" className="text-xs font-medium text-gray-700">
                       学部
                     </Label>
                     {isEditing ? (
@@ -347,7 +387,7 @@ export default function ProfilePage() {
                       </Select>
                     ) : (
                       <div className="h-11 flex items-center px-3 bg-gray-50 rounded-md border">
-                        <span className="text-gray-900 font-medium">
+                        <span className="text-sm text-gray-900 font-medium">
                           {userProfile?.faculty || '未設定'}
                         </span>
                       </div>
@@ -355,7 +395,7 @@ export default function ProfilePage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="department" className="text-sm font-medium text-gray-700">
+                    <Label htmlFor="department" className="text-xs font-medium text-gray-700">
                       学科名
                     </Label>
                     {isEditing ? (
@@ -382,7 +422,7 @@ export default function ProfilePage() {
                       </Select>
                     ) : (
                       <div className="h-11 flex items-center px-3 bg-gray-50 rounded-md border">
-                        <span className="text-gray-900 font-medium">
+                        <span className="text-sm text-gray-900 font-medium">
                           {userProfile?.department || '未設定'}
                         </span>
                       </div>
@@ -390,7 +430,7 @@ export default function ProfilePage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="course" className="text-sm font-medium text-gray-700">
+                    <Label htmlFor="course" className="text-xs font-medium text-gray-700">
                       コース
                     </Label>
                     {isEditing ? (
@@ -412,7 +452,7 @@ export default function ProfilePage() {
                       </Select>
                     ) : (
                       <div className="h-11 flex items-center px-3 bg-gray-50 rounded-md border">
-                        <span className="text-gray-900 font-medium">
+                        <span className="text-sm text-gray-900 font-medium">
                           {userProfile?.course || '未分属'}
                         </span>
                       </div>
@@ -420,7 +460,7 @@ export default function ProfilePage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="grade" className="text-sm font-medium text-gray-700">
+                    <Label htmlFor="grade" className="text-xs font-medium text-gray-700">
                       学年
                     </Label>
                     {isEditing ? (
@@ -441,7 +481,7 @@ export default function ProfilePage() {
                       </Select>
                     ) : (
                       <div className="h-11 flex items-center px-3 bg-gray-50 rounded-md border">
-                        <span className="text-gray-900 font-medium">
+                        <span className="text-sm text-gray-900 font-medium">
                           {userProfile?.grade || '未設定'}
                         </span>
                       </div>
@@ -512,4 +552,6 @@ export default function ProfilePage() {
       )}
     </>
   );
-}
+});
+
+export default ProfilePage;

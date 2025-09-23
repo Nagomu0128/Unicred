@@ -76,20 +76,19 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ currentPage = 'dashboa
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* ロゴ・タイトル */}
-          <div className="flex items-center">
-            <Link href="/admin" className="flex items-center space-x-3">
-              <div className="w-[36.8px] h-[36.8px] bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
+          <div className="flex items-center space-x-3">
+            <div className="w-[36.8px] h-[36.8px] bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
                 <img 
                   src="/unicred-icon.svg" 
                   alt="Unicred Logo" 
-                  className="w-8 h-8 filter brightness-0 invert"
+                  className="w-8 h-8 filter brightness-0 invert pointer-events-none select-none"
+                  draggable="false"
                 />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">管理者パネル</h1>
-                <p className="text-xs text-gray-500">Unicred Admin</p>
-              </div>
-            </Link>
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">管理者パネル</h1>
+              <p className="text-xs text-gray-500">Unicred Admin</p>
+            </div>
           </div>
 
           {/* メニューアイテム */}
