@@ -12,14 +12,11 @@ export async function isUserAdmin(uid: string): Promise<boolean> {
   try {
     const userDoc = await dbAdmin.collection('users').doc(uid).get();
     if (!userDoc.exists) {
-      console.log('User document does not exist for admin check:', uid);
       return false;
     }
     
     const userData = userDoc.data();
-    const isAdmin = userData?.isAdmin === true;
-    console.log('Admin status check result:', { uid, isAdmin });
-    return isAdmin;
+    return userData?.isAdmin === true;
   } catch (error) {
     console.error('Error checking admin status:', error);
     return false;
@@ -102,65 +99,93 @@ export async function revokeAdminRole(uid: string): Promise<boolean> {
  */
 export async function getAllUsers(): Promise<AdminUser[]> {
   try {
+    console.log('=== getAllUsers START ===');
     const usersSnapshot = await dbAdmin.collection('users').get();
+    console.log('Total users found:', usersSnapshot.size);
     const users: AdminUser[] = [];
-    
-    console.log('Fetching users, total documents:', usersSnapshot.size);
     
     for (const doc of usersSnapshot.docs) {
       const userData = doc.data();
-      
-      // 基本的なデータ検証
-      if (!userData.email) {
-        console.warn('Skipping user with no email:', doc.id);
-        continue;
-      }
+      console.log(`Processing user ${doc.id}:`, {
+        email: userData.email,
+        createdAt: userData.createdAt,
+        updatedAt: userData.updatedAt,
+        createdAtType: typeof userData.createdAt,
+        updatedAtType: typeof userData.updatedAt
+      });
       
       // 日付の安全な変換
-      const safeToDate = (timestamp: any): Date => {
+      const safeToDate = (timestamp: any, fieldName: string): Date | null => {
         try {
+          console.log(`Converting ${fieldName}:`, { timestamp, type: typeof timestamp });
+          
           if (timestamp && typeof timestamp.toDate === 'function') {
-            return timestamp.toDate();
+            const result = timestamp.toDate();
+            console.log(`${fieldName} - Firestore Timestamp converted:`, result);
+            return result;
           }
           if (timestamp instanceof Date) {
+            console.log(`${fieldName} - Already a Date:`, timestamp);
             return timestamp;
           }
           // Firestore Timestamp の場合
           if (timestamp && timestamp._seconds !== undefined) {
-            return new Date(timestamp._seconds * 1000 + (timestamp._nanoseconds || 0) / 1000000);
+            const result = new Date(timestamp._seconds * 1000 + (timestamp._nanoseconds || 0) / 1000000);
+            console.log(`${fieldName} - Firestore Timestamp (raw) converted:`, result);
+            return result;
           }
           // 数値の場合（Unix timestamp）
           if (typeof timestamp === 'number') {
-            return new Date(timestamp);
+            const result = new Date(timestamp);
+            console.log(`${fieldName} - Number timestamp converted:`, result);
+            return result;
           }
-          // 文字列の場合
+          // 文字列の場合（ISO 8601形式など）
           if (typeof timestamp === 'string') {
             const parsed = new Date(timestamp);
             if (!isNaN(parsed.getTime())) {
+              console.log(`${fieldName} - String timestamp converted:`, parsed);
               return parsed;
             }
           }
           // デフォルト値はnullを返して、フロントエンドで適切に処理
+          console.log(`${fieldName} - No valid timestamp found, returning null`);
           return null;
         } catch (error) {
-          console.error('Error converting timestamp:', error, timestamp);
+          console.error(`Error converting ${fieldName}:`, error, timestamp);
           return null;
         }
       };
+      
+      const createdAt = safeToDate(userData.createdAt, 'createdAt');
+      const updatedAt = safeToDate(userData.updatedAt, 'updatedAt');
+      const lastLoginAt = userData.lastLoginAt ? safeToDate(userData.lastLoginAt, 'lastLoginAt') : undefined;
+      
+      console.log(`Final converted dates for ${doc.id}:`, {
+        createdAt,
+        updatedAt,
+        lastLoginAt
+      });
       
       users.push({
         uid: doc.id,
         email: userData.email || '',
         displayName: userData.displayName || '',
         isAdmin: userData.isAdmin || false,
-        createdAt: safeToDate(userData.createdAt),
-        updatedAt: safeToDate(userData.updatedAt),
-        lastLoginAt: userData.lastLoginAt ? safeToDate(userData.lastLoginAt) : undefined,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        lastLoginAt: lastLoginAt,
         isActive: userData.isActive !== false
       });
     }
     
-    console.log('Successfully processed users:', users.length);
+    console.log('=== getAllUsers END - returning users ===');
+    console.log('Final users array:', users.map(u => ({
+      uid: u.uid,
+      email: u.email,
+      createdAt: u.createdAt,
+      updatedAt: u.updatedAt
+    })));
     
     return users.sort((a, b) => {
       const aTime = a.createdAt ? a.createdAt.getTime() : 0;
@@ -223,31 +248,42 @@ export async function getUserDetails(uid: string): Promise<AdminUser | null> {
     // 日付の安全な変換
     const safeToDate = (timestamp: any): Date | null => {
       try {
+        console.log('getUserDetails - Converting timestamp:', { timestamp, type: typeof timestamp });
+        
         if (timestamp && typeof timestamp.toDate === 'function') {
-          return timestamp.toDate();
+          const result = timestamp.toDate();
+          console.log('getUserDetails - Firestore Timestamp converted:', result);
+          return result;
         }
         if (timestamp instanceof Date) {
+          console.log('getUserDetails - Already a Date:', timestamp);
           return timestamp;
         }
         // Firestore Timestamp の場合
         if (timestamp && timestamp._seconds !== undefined) {
-          return new Date(timestamp._seconds * 1000 + (timestamp._nanoseconds || 0) / 1000000);
+          const result = new Date(timestamp._seconds * 1000 + (timestamp._nanoseconds || 0) / 1000000);
+          console.log('getUserDetails - Firestore Timestamp (raw) converted:', result);
+          return result;
         }
         // 数値の場合（Unix timestamp）
         if (typeof timestamp === 'number') {
-          return new Date(timestamp);
+          const result = new Date(timestamp);
+          console.log('getUserDetails - Number timestamp converted:', result);
+          return result;
         }
         // 文字列の場合
         if (typeof timestamp === 'string') {
           const parsed = new Date(timestamp);
           if (!isNaN(parsed.getTime())) {
+            console.log('getUserDetails - String timestamp converted:', parsed);
             return parsed;
           }
         }
         // デフォルト値はnullを返して、フロントエンドで適切に処理
+        console.log('getUserDetails - No valid timestamp found, returning null');
         return null;
       } catch (error) {
-        console.error('Error converting timestamp:', error, timestamp);
+        console.error('getUserDetails - Error converting timestamp:', error, timestamp);
         return null;
       }
     };

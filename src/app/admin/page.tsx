@@ -31,7 +31,21 @@ export default function AdminPage() {
       }
       
       const data = await response.json();
-      setUsers(data.users);
+      console.log('Admin page - received users data:', data.users);
+      console.log('Admin page - sample user data:', data.users[0]);
+      
+      // ISO文字列をDateオブジェクトに変換
+      const usersWithDates = data.users.map((user: any) => ({
+        ...user,
+        createdAt: user.createdAt ? new Date(user.createdAt) : null,
+        updatedAt: user.updatedAt ? new Date(user.updatedAt) : null,
+        lastLoginAt: user.lastLoginAt ? new Date(user.lastLoginAt) : null,
+      }));
+      
+      console.log('Admin page - converted users with dates:', usersWithDates);
+      console.log('Admin page - sample converted user:', usersWithDates[0]);
+      
+      setUsers(usersWithDates);
     } catch (err) {
       console.error('Error fetching users:', err);
       setError(err instanceof Error ? err.message : 'エラーが発生しました');
@@ -42,8 +56,6 @@ export default function AdminPage() {
 
   const handleUpdateAdminStatus = async (uid: string, isAdmin: boolean) => {
     try {
-      console.log('Starting admin status update:', { uid, isAdmin });
-      
       const response = await fetch('/api/admin/users', {
         method: 'PATCH',
         headers: {
@@ -54,57 +66,10 @@ export default function AdminPage() {
           isAdmin: isAdmin,
         }),
       });
-      
-      console.log('Fetch response received:', {
-        ok: response.ok,
-        status: response.status,
-        statusText: response.statusText,
-        url: response.url
-      });
 
       if (!response.ok) {
-        let errorMessage = '管理者権限の更新に失敗しました';
-        let errorData = null;
-        
-        try {
-          errorData = await response.json();
-          errorMessage = errorData?.error || errorMessage;
-        } catch (parseError) {
-          console.error('Error parsing response:', parseError);
-          errorMessage = `HTTP ${response?.status || 'unknown'}: ${response?.statusText || 'unknown error'}`;
-        }
-        
-        // デバッグ情報を詳細にログ出力
-        const debugInfo = {
-          responseOk: response.ok,
-          status: response?.status || 'undefined',
-          statusText: response?.statusText || 'undefined',
-          url: response?.url || '/api/admin/users',
-          uid: uid || 'undefined',
-          isAdmin: isAdmin !== undefined ? isAdmin : 'undefined',
-          errorMessage: errorMessage || 'undefined',
-          errorData: errorData || 'no error data',
-          timestamp: new Date().toISOString()
-        };
-        
-        // シンプルなエラーログ
-        console.error('ADMIN UPDATE FAILED - Status:', response.status, 'UID:', uid, 'IsAdmin:', isAdmin);
-        console.error('Error Message:', errorMessage);
-        console.error('Full Error Data:', errorData);
-        
-        // Status 500エラーの場合、ユーザーが存在しない可能性がある
-        if (response.status === 500 && errorMessage.includes('ユーザーが見つかりません')) {
-          console.log('User not found, removing from local list:', uid);
-          // ローカルのユーザーリストから該当ユーザーを削除
-          setUsers(prevUsers => prevUsers.filter(user => user.uid !== uid));
-          alert(`ユーザーが見つからないため、リストから削除しました: ${uid}`);
-        } else {
-          alert(`管理者権限の更新に失敗しました: ${errorMessage}`);
-        }
-        
-        // ユーザーリストを再取得して最新状態に更新
-        await fetchUsers();
-        return;
+        const errorData = await response.json();
+        throw new Error(errorData.error || '管理者権限の更新に失敗しました');
       }
 
       // ユーザーリストを更新
@@ -114,15 +79,7 @@ export default function AdminPage() {
         )
       );
     } catch (err) {
-      console.error('=== FETCH ERROR ===');
-      console.error('Error type:', typeof err);
-      console.error('Error message:', err instanceof Error ? err.message : 'Unknown error');
-      console.error('Error stack:', err instanceof Error ? err.stack : 'No stack');
-      console.error('UID:', uid);
-      console.error('IsAdmin:', isAdmin);
-      console.error('Timestamp:', new Date().toISOString());
-      console.error('==================');
-      
+      console.error('Error updating admin status:', err);
       const errorMessage = err instanceof Error ? err.message : 'エラーが発生しました';
       alert(`管理者権限の更新に失敗しました: ${errorMessage}`);
       

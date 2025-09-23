@@ -27,6 +27,10 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
 
+  // デバッグ用：ユーザーデータの詳細をログ出力
+  console.log('UserManagement - received users:', users);
+  console.log('UserManagement - sample user:', users[0]);
+
   const filteredUsers = users.filter(user =>
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (user.displayName && user.displayName.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -79,17 +83,23 @@ export const UserManagement: React.FC<UserManagementProps> = ({
   };
 
   const formatDate = (date: Date | null | undefined) => {
+    console.log('formatDate called with:', { date, type: typeof date, isDate: date instanceof Date });
+    
     if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+      console.log('formatDate returning "-" for invalid date:', date);
       return '-';
     }
     
-    return new Intl.DateTimeFormat('ja-JP', {
+    const formatted = new Intl.DateTimeFormat('ja-JP', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit'
     }).format(date);
+    
+    console.log('formatDate returning formatted date:', formatted);
+    return formatted;
   };
 
   if (loading) {

@@ -24,7 +24,18 @@ export async function GET(request: NextRequest) {
 
     // 全ユーザーを取得
     const users = await getAllUsers();
-    return NextResponse.json({ users });
+    
+    // DateオブジェクトをISO文字列に変換してからJSONレスポンスに含める
+    const serializedUsers = users.map(user => ({
+      ...user,
+      createdAt: user.createdAt ? user.createdAt.toISOString() : null,
+      updatedAt: user.updatedAt ? user.updatedAt.toISOString() : null,
+      lastLoginAt: user.lastLoginAt ? user.lastLoginAt.toISOString() : null,
+    }));
+    
+    console.log('API - serialized users:', serializedUsers);
+    
+    return NextResponse.json({ users: serializedUsers });
 
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -52,73 +63,32 @@ export async function PATCH(request: NextRequest) {
     }
 
     const { targetUid, isAdmin: newAdminStatus } = await request.json();
-    
-    console.log('Admin status update request:', {
-      requestingUser: uid,
-      targetUid,
-      newAdminStatus,
-      timestamp: new Date().toISOString()
-    });
 
     if (!targetUid || typeof newAdminStatus !== 'boolean') {
-      console.error('Invalid parameters:', { targetUid, newAdminStatus });
       return NextResponse.json({ error: 'Invalid parameters' }, { status: 400 });
     }
 
     // 自分自身の管理者権限を変更しようとした場合は拒否
     if (targetUid === uid) {
-      console.error('Attempted self-modification:', { uid, targetUid });
       return NextResponse.json({ error: 'Cannot modify your own admin status' }, { status: 400 });
     }
 
-    // 対象ユーザーが存在するかチェック
-    const userExistsResult = await userExists(targetUid);
-    if (!userExistsResult) {
-      console.error('Target user does not exist:', targetUid);
-      return NextResponse.json({ error: 'ユーザーが見つかりません。既に削除されている可能性があります。' }, { status: 404 });
-    }
-
     let success: boolean;
-    try {
-      if (newAdminStatus) {
-        console.log('Attempting to grant admin role to:', targetUid);
-        success = await grantAdminRole(targetUid);
-      } else {
-        console.log('Attempting to revoke admin role from:', targetUid);
-        success = await revokeAdminRole(targetUid);
-      }
-      
-      console.log('Admin role operation result:', { targetUid, newAdminStatus, success });
-    } catch (operationError) {
-      console.error('Error during admin role operation:', operationError);
-      success = false;
+    if (newAdminStatus) {
+      success = await grantAdminRole(targetUid);
+    } else {
+      success = await revokeAdminRole(targetUid);
     }
 
     if (success) {
       return NextResponse.json({ success: true });
     } else {
-      console.error('Admin role operation failed:', { targetUid, newAdminStatus });
-      return NextResponse.json({ 
-        error: `管理者権限の更新に失敗しました。ユーザー "${targetUid}" が見つからない可能性があります。` 
-      }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to update admin status' }, { status: 500 });
     }
 
   } catch (error) {
     console.error('Error updating admin status:', error);
-    
-    // より詳細なエラーメッセージを提供
-    let errorMessage = 'Internal Server Error';
-    if (error instanceof Error) {
-      if (error.message.includes('No document to update')) {
-        errorMessage = 'ユーザードキュメントが見つかりません。ユーザーが既に削除されている可能性があります。';
-      } else if (error.message.includes('permission')) {
-        errorMessage = '権限が不足しています。';
-      } else {
-        errorMessage = `サーバーエラー: ${error.message}`;
-      }
-    }
-    
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
 
